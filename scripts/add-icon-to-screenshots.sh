@@ -16,17 +16,17 @@ add_overlay() {
     local title="$3"
     local subtitle="$4"
     
-    # Create overlay with icon and text
+    # Create overlay with icon and text - using more visible settings
     magick "$input" \
-        \( "$ICON" -resize 96x96 -background none \) \
-        -gravity northwest -geometry +30+30 -composite \
-        \( -size 500x150 xc:'rgba(0,0,0,0.7)' \
-           -font Arial-Bold -pointsize 28 -fill white \
-           -gravity northwest -annotate +15+15 "$title" \
-           -font Arial -pointsize 18 -fill '#E0E0E0' \
-           -gravity northwest -annotate +15+50 "$subtitle" \
-           -bordercolor none -border 10 \
-        \) -gravity northeast -geometry +30+30 -composite \
+        \( "$ICON" -resize 120x120 \) \
+        -gravity northwest -geometry +40+40 -composite \
+        \( -size 650x200 xc:'rgba(0,0,0,0.9)' \
+           -font Helvetica-Bold -pointsize 40 -fill white \
+           -gravity northwest -annotate +25+25 "$title" \
+           -font Helvetica -pointsize 24 -fill '#F5F5F5' \
+           -gravity northwest -annotate +25+80 "$subtitle" \
+           -bordercolor 'rgba(0,0,0,0.9)' -border 20 \
+        \) -gravity northeast -geometry +40+40 -composite \
         "$output"
 }
 
