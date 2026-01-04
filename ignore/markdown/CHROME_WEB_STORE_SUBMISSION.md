@@ -16,6 +16,30 @@
 
 ## 🎯 Chrome Web Store Listing Details
 
+### Single Purpose Description (1000 characters max)
+
+```
+PR Description Guard has a single, narrow purpose: to validate GitHub pull request descriptions in real-time and provide inline guidance when required sections are missing. The extension monitors the PR description textarea on GitHub pull request pages and validates the content against three required sections: "What changed", "Why", and "How it was tested". When sections are missing, it displays a non-intrusive warning box below the textarea with specific guidance. The extension does not block PR creation or merging—it only provides helpful validation feedback. All validation happens locally in the browser using pure JavaScript/TypeScript. No data is collected, stored, or transmitted. The extension works exclusively on GitHub pull request pages (creation, editing, and viewing) and has no other functionality beyond this single validation purpose.
+```
+
+### Permission Justifications
+
+#### Storage Permission Justification (1000 characters max)
+
+```
+The storage permission is required to save user preferences for the extension's settings. Specifically, it stores three boolean preferences: enableValidation (whether to show validation warnings), showOnExistingPRs (whether to validate existing PRs in read-only view), and strictMode (future feature preference). These preferences are stored locally using Chrome's chrome.storage.sync API and are synced across the user's Chrome browsers if they have sync enabled. No user content, PR descriptions, personal information, or any other data is stored. The storage permission is essential for the extension to remember user preferences between browser sessions. Without this permission, users would need to reconfigure the extension settings every time they use it, which would significantly degrade the user experience. The extension does not use localStorage, sessionStorage, cookies, or any other storage mechanisms—only Chrome's storage API for these minimal preference settings.
+```
+
+#### Context Menus Permission Justification (1000 characters max)
+
+```
+The contextMenus permission is used to provide a right-click context menu option that allows users to quickly access the extension's settings popup. When users right-click on a GitHub page, they can select "PR Description Guard" from the context menu to open the settings popup. This provides convenient access to toggle validation settings without needing to click the extension icon in the toolbar. The context menu only appears on GitHub pages (matching the content script matches) and provides a single action: opening the settings popup. No user data is accessed or collected through the context menu. This permission enhances user experience by providing an alternative way to access extension settings, but it is not strictly required for core functionality—the extension can still be accessed via the toolbar icon. However, it provides a more convenient user experience for developers who frequently need to adjust validation settings while working on pull requests.
+```
+
+#### Host Permission Justification
+
+**Note:** This extension does NOT request host permissions. The content script matches are specified in the manifest.json under `content_scripts[].matches`, which does not require host permissions. The extension only runs on GitHub pull request pages (`*://github.com/*/compare/*`, `*://github.com/*/pull/new/*`, `*://github.com/*/pull/*`) as specified in the manifest, and this is sufficient for the extension's single purpose of validating PR descriptions. No additional host permissions are needed.
+
 ### Basic Information
 
 **Extension Name:**
