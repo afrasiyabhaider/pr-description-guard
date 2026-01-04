@@ -29,8 +29,13 @@ let validationHandler: ((event: Event) => void) | null = null;
 let initTimeout: ReturnType<typeof setTimeout> | null = null;
 let navigationInterval: ReturnType<typeof setInterval> | null = null;
 let mutationObserver: MutationObserver | null = null;
+let popstateHandler: ((event: PopStateEvent) => void) | null = null;
+let turboLoadHandler: ((event: Event) => void) | null = null;
 let currentPath = location.pathname;
 let hasAnnounced = false;
+
+// Development mode flag (set to false in production)
+const DEV_MODE = false;
 
 /**
  * Build warning DOM structure from validation errors
@@ -125,6 +130,7 @@ function showWarning(errors: Array<{ rule: string; message: string }>): void {
   // Use 'alert' role on first appearance, 'status' on updates
   warning.setAttribute('role', hasAnnounced ? 'status' : 'alert');
   warning.setAttribute('aria-live', 'polite');
+  warning.setAttribute('aria-label', `PR Description Validation: ${errors.length} issue${errors.length === 1 ? '' : 's'} found`);
   
   // Insert warning after textarea
   textarea.parentNode?.insertBefore(warning, textarea.nextSibling);
@@ -180,7 +186,9 @@ function initializeGuard(): void {
           textarea.addEventListener('input', validationHandler);
           textarea.addEventListener('paste', validationHandler);
         } catch (error) {
-          console.warn('[PR Guard] Failed to attach event listeners:', error);
+          if (DEV_MODE) {
+            console.warn('[PR Guard] Failed to attach event listeners:', error);
+          }
           return; // Don't mark as initialized if listeners failed
         }
         
@@ -194,10 +202,14 @@ function initializeGuard(): void {
         retries++;
         setTimeout(tryInit, 500);
       } else if (!textarea) {
-        console.warn('[PR Guard] Could not find description field after retries');
+        if (DEV_MODE) {
+          console.warn('[PR Guard] Could not find description field after retries');
+        }
       }
     } catch (error) {
-      console.warn('[PR Guard] Initialization error:', error);
+      if (DEV_MODE) {
+        console.warn('[PR Guard] Initialization error:', error);
+      }
       // Fail silently, don't break GitHub
     }
   };
@@ -238,25 +250,53 @@ function cleanup(): void {
       mutationObserver = null;
     }
     
+    // Remove event listeners
+    if (popstateHandler) {
+      window.removeEventListener('popstate', popstateHandler);
+      popstateHandler = null;
+    }
+    
+    if (turboLoadHandler) {
+      document.removeEventListener('turbo:load', turboLoadHandler);
+      turboLoadHandler = null;
+    }
+    
     document.body.classList.remove('pr-guard-initialized');
     hasAnnounced = false;
     validationHandler = null;
   } catch (error) {
-    console.warn('[PR Guard] Cleanup error:', error);
+    if (DEV_MODE) {
+      console.warn('[PR Guard] Cleanup error:', error);
+    }
     // Continue cleanup even if errors occur
   }
 }
 
 /**
  * Handle navigation changes
+ * Wrapped in try-catch for error safety
  */
 function handleNavigation(): void {
-  const newPath = location.pathname;
-  
-  if (newPath !== currentPath) {
-    currentPath = newPath;
+  try {
+    const newPath = location.pathname;
     
+    if (newPath !== currentPath) {
+      currentPath = newPath;
+      
     if (isPRPage(newPath)) {
+      // Start navigation interval if not already running
+      if (!navigationInterval) {
+        navigationInterval = setInterval(() => {
+          handleNavigation();
+          if (!isPRPage()) {
+            if (navigationInterval) {
+              clearInterval(navigationInterval);
+              navigationInterval = null;
+            }
+          }
+        }, 2000);
+      }
+      
       // Debounce initialization to avoid multiple rapid calls
       if (initTimeout) {
         clearTimeout(initTimeout);
@@ -265,6 +305,12 @@ function handleNavigation(): void {
     } else {
       cleanup();
     }
+    }
+  } catch (error) {
+    if (DEV_MODE) {
+      console.warn('[PR Guard] Navigation handling error:', error);
+    }
+    // Fail silently, don't break GitHub
   }
 }
 
@@ -278,14 +324,37 @@ function safeInit(): void {
     }
     
     // Set up navigation detection
-    // Primary: Check URL on interval (2-3 seconds)
-    navigationInterval = setInterval(handleNavigation, 2000);
+    // Store handler references for cleanup
+    popstateHandler = handleNavigation;
+    turboLoadHandler = handleNavigation;
+    
+    // Primary: Check URL on interval (only when on PR page or navigating)
+    // Optimize: Only run interval when needed
+    const startNavigationInterval = () => {
+      if (!navigationInterval) {
+        navigationInterval = setInterval(() => {
+          handleNavigation();
+          // Stop interval if not on PR page
+          if (!isPRPage()) {
+            if (navigationInterval) {
+              clearInterval(navigationInterval);
+              navigationInterval = null;
+            }
+          }
+        }, 2000);
+      }
+    };
+    
+    // Start interval if on PR page
+    if (isPRPage()) {
+      startNavigationInterval();
+    }
     
     // Secondary: Listen to browser navigation
-    window.addEventListener('popstate', handleNavigation);
+    window.addEventListener('popstate', popstateHandler);
     
     // Optional: Listen to Turbo events if available
-    document.addEventListener('turbo:load', handleNavigation);
+    document.addEventListener('turbo:load', turboLoadHandler);
     
     // Fallback: Lightweight MutationObserver for textarea appearance
     mutationObserver = new MutationObserver(() => {
@@ -299,7 +368,9 @@ function safeInit(): void {
       subtree: false // Only watch direct children
     });
   } catch (error) {
-    console.warn('[PR Guard] Initialization failed:', error);
+    if (DEV_MODE) {
+      console.warn('[PR Guard] Initialization failed:', error);
+    }
     // Fail silently, don't break GitHub
   }
 }
