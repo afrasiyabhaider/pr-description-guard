@@ -3,6 +3,27 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     globals: true,
-    environment: 'node',
+    environment: 'jsdom', // Use jsdom for DOM testing
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'dist/',
+        '**/*.test.ts',
+        '**/*.config.ts',
+        'vite.config.ts',
+        'vitest.config.ts',
+        'src/styles.css', // CSS files don't need coverage
+        'src/content.ts', // Integration code - tested manually on real GitHub
+      ],
+      include: ['src/validator.ts', 'src/dom.ts'], // Focus on testable pure functions
+      thresholds: {
+        lines: 90,
+        functions: 90,
+        branches: 90,
+        statements: 90,
+      },
+    },
   },
 });
