@@ -5,7 +5,7 @@
 ### Main Prompt (Copy-Paste Ready)
 
 ```
-A flat design Chrome extension icon, 128x128 pixels. Shield shape with rounded top point, warm yellow-amber background (#F0C36D), three horizontal checklist lines in dark brown (#735C0F), white checkmark icon in top-right corner, GitHub octocat logo silhouette in center, document/description icon overlay. Minimalist, clean, professional, no shadows, no gradients, transparent background, GitHub-style design aesthetic, recognizable at 16x16 pixels.
+A flat design Chrome extension icon, 128x128 pixels. Shield shape with rounded top point, warm yellow-amber background (#F0C36D), three horizontal checklist lines in dark brown (#735C0F), white checkmark icon in top-right corner, Git logo (branching tree/graph icon) in center, document/description icon overlay. Minimalist, clean, professional, no shadows, no gradients, transparent background, Git platform style design aesthetic, recognizable at 16x16 pixels.
 ```
 
 ---
@@ -18,13 +18,13 @@ Shield shape with rounded top point as the base.
 Warm yellow-amber background color (#F0C36D). 
 Three horizontal checklist lines in dark brown (#735C0F) representing validation checklist. 
 Small white checkmark icon in top-right corner. 
-GitHub octocat logo silhouette in the center (simplified, dark brown #735C0F). 
+Git logo (branching tree/graph structure) in the center (simplified, dark brown #735C0F). 
 Document/description icon (paper with lines) integrated into the design. 
 Clean, simple, professional appearance. 
 No gradients, no shadows, no 3D effects. 
 Transparent background. 
 Must be clear and recognizable at 16x16 pixels. 
-GitHub-style design aesthetic.
+Git platform design aesthetic (works for GitHub, GitLab, Bitbucket, etc.).
 ```
 
 ---
@@ -34,7 +34,7 @@ GitHub-style design aesthetic.
 ```
 Flat design shield icon, 128x128 pixels. Yellow amber background (#F0C36D), 
 three horizontal lines dark brown (#735C0F), white checkmark, 
-GitHub logo silhouette center, document icon, minimalist, 
+Git logo (branching tree) center, document icon, minimalist, 
 transparent background, Chrome extension style.
 ```
 
@@ -50,8 +50,8 @@ transparent background, Chrome extension style.
    ```
    A flat design Chrome extension icon, 128x128 pixels. Shield shape with rounded top, 
    warm yellow-amber background (#F0C36D), three horizontal lines in dark brown (#735C0F), 
-   white checkmark icon, GitHub octocat logo silhouette center, document icon overlay. 
-   Minimalist, clean, professional, no shadows, transparent background, GitHub-style.
+   white checkmark icon, Git logo (branching tree/graph) center, document icon overlay. 
+   Minimalist, clean, professional, no shadows, transparent background, Git platform style.
    ```
 4. **Settings:**
    - Style: Flat/Icon/Vector
@@ -70,7 +70,7 @@ Flat design shield icon, rounded top point, yellow amber background #F0C36D,
 **Step 2: Add Elements**
 ```
 Same shield, add three horizontal checklist lines dark brown #735C0F, 
-white checkmark top-right, GitHub logo center, document icon, 
+white checkmark top-right, Git logo (branching tree) center, document icon, 
 flat design, no shadows.
 ```
 
@@ -95,9 +95,9 @@ flat design, no shadows.
 ```
 Flat design Chrome extension icon, 128x128 pixels. Shield shape with rounded top, 
 warm yellow-amber background (#F0C36D), three horizontal checklist lines dark brown (#735C0F), 
-white checkmark icon top-right, GitHub octocat logo silhouette center, 
+white checkmark icon top-right, Git logo (branching tree/graph structure) center, 
 document/description icon, minimalist, clean, professional, 
-transparent background, GitHub-style design.
+transparent background, Git platform design style.
 ```
 
 **Negative Prompt:**
@@ -115,22 +115,22 @@ photorealistic, depth, perspective, rounded edges on icon elements
 1. **Shield Base** - Rounded top point, yellow-amber (#F0C36D)
 2. **Three Lines** - Horizontal, dark brown (#735C0F), evenly spaced
 3. **Checkmark** - White, top-right corner, small
-4. **GitHub Logo** - Octocat silhouette, simplified, dark brown (#735C0F), center
+4. **Git Logo** - Branching tree/graph structure (represents all Git platforms), simplified, dark brown (#735C0F), center
 5. **Document Icon** - Paper with lines, integrated with design, dark brown (#735C0F)
 
 ### Visual Hierarchy:
 
 - **Background:** Shield shape, yellow-amber
-- **Foreground:** GitHub logo (center), document icon (overlay)
+- **Foreground:** Git logo (branching tree, center), document icon (overlay)
 - **Details:** Three lines (checklist), checkmark (validation)
 
 ---
 
 ## Alternative Prompts (Try Different Variations)
 
-### Version 1: GitHub Logo Prominent
+### Version 1: Git Logo Prominent
 ```
-Flat design shield icon, yellow amber #F0C36D, GitHub octocat logo center, 
+Flat design shield icon, yellow amber #F0C36D, Git logo (branching tree) center, 
 three checklist lines, white checkmark, document icon, 
 128x128, transparent, minimalist.
 ```
@@ -138,14 +138,14 @@ three checklist lines, white checkmark, document icon,
 ### Version 2: Document Icon Prominent
 ```
 Chrome extension icon, shield shape, yellow amber background, 
-document icon with three lines, GitHub logo silhouette, 
+document icon with three lines, Git logo (branching tree), 
 white checkmark, flat design, 128x128, transparent.
 ```
 
 ### Version 3: Balanced Design
 ```
 Minimalist shield icon, yellow amber #F0C36D, dark brown #735C0F details, 
-GitHub logo and document icon integrated, three horizontal lines, 
+Git logo (branching tree) and document icon integrated, three horizontal lines, 
 white checkmark, flat design, 128x128 pixels, transparent background.
 ```
 
@@ -168,7 +168,7 @@ white checkmark, flat design, 128x128 pixels, transparent background.
 - [ ] Shield shape visible
 - [ ] Three lines clear
 - [ ] Checkmark visible
-- [ ] GitHub logo recognizable
+- [ ] Git logo recognizable (branching tree structure)
 - [ ] Document icon present
 - [ ] All elements clear at small size
 
@@ -201,9 +201,9 @@ white checkmark, flat design, 128x128 pixels, transparent background.
 ```
 Flat design Chrome extension icon, 128x128 pixels. Shield shape with rounded top, 
 warm yellow-amber background (#F0C36D), three horizontal checklist lines in dark brown (#735C0F), 
-white checkmark icon in top-right corner, GitHub octocat logo silhouette in center, 
+white checkmark icon in top-right corner, Git logo (branching tree/graph structure) in center, 
 document/description icon overlay. Minimalist, clean, professional, no shadows, 
-no gradients, transparent background, GitHub-style design aesthetic, 
+no gradients, transparent background, Git platform design aesthetic, 
 recognizable at 16x16 pixels.
 ```
 
@@ -218,12 +218,12 @@ photorealistic, depth, perspective
 ## Troubleshooting
 
 ### If Icon Too Complex:
-- Simplify: Remove document icon, keep only GitHub logo
-- Use: "Simplified GitHub logo silhouette" instead of full logo
+- Simplify: Remove document icon, keep only Git logo
+- Use: "Simplified Git branching tree icon" instead of full logo
 
 ### If Elements Not Clear:
 - Increase contrast between elements
-- Make GitHub logo larger
+- Make Git logo larger
 - Simplify document icon to just lines
 
 ### If Colors Wrong:
