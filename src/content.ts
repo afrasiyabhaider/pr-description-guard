@@ -336,8 +336,14 @@ function cleanup(): void {
     
     if (turboLoadHandler) {
       document.removeEventListener('turbo:load', turboLoadHandler);
+      document.removeEventListener('turbo:render', turboLoadHandler);
+      document.removeEventListener('pjax:end', turboLoadHandler);
+      document.removeEventListener('page:load', turboLoadHandler);
       turboLoadHandler = null;
     }
+    
+    // Restore original history methods if we intercepted them
+    // Note: We can't fully restore, but this is okay as we're cleaning up
     
     document.body.classList.remove('pr-guard-initialized');
     document.body.classList.remove('pr-guard-rendered-validated');
@@ -361,6 +367,7 @@ function cleanup(): void {
  */
 function manageNavigationInterval(): void {
   if (isPRPage() && !navigationInterval) {
+    // Check more frequently for SPA navigation (1 second instead of 2)
     navigationInterval = setInterval(() => {
       handleNavigation();
       if (!isPRPage()) {
@@ -369,7 +376,7 @@ function manageNavigationInterval(): void {
           navigationInterval = null;
         }
       }
-    }, 2000);
+    }, 1000); // Reduced from 2000ms to 1000ms for faster SPA detection
   } else if (!isPRPage() && navigationInterval) {
     clearInterval(navigationInterval);
     navigationInterval = null;
@@ -385,19 +392,36 @@ function handleNavigation(): void {
     const newPath = location.pathname;
     
     if (newPath !== currentPath) {
+      if (DEV_MODE) {
+        console.log('[PR Guard] Navigation detected:', currentPath, '→', newPath);
+      }
+      
+      // Cleanup first before navigating to new page
+      cleanup();
+      
       currentPath = newPath;
       
       if (isPRPage(newPath)) {
         // Start navigation interval if not already running
         manageNavigationInterval();
         
-        // Debounce initialization to avoid multiple rapid calls
+        // Initialize immediately (no debounce) for SPA navigation
+        // The cleanup above ensures we start fresh
         if (initTimeout) {
           clearTimeout(initTimeout);
         }
-        initTimeout = setTimeout(initializeGuard, 500);
+        initTimeout = setTimeout(() => {
+          if (DEV_MODE) {
+            console.log('[PR Guard] Initializing after SPA navigation to:', newPath);
+          }
+          initializeGuard();
+        }, 100); // Reduced delay for faster initialization
       } else {
-        cleanup();
+        // Not on PR page, cleanup already done above
+        if (navigationInterval) {
+          clearInterval(navigationInterval);
+          navigationInterval = null;
+        }
       }
     }
   } catch (error) {
@@ -445,17 +469,39 @@ function safeInit(): void {
     // Secondary: Listen to browser navigation
     window.addEventListener('popstate', popstateHandler);
     
-    // Optional: Listen to Turbo events if available
+    // Listen to various SPA navigation events
+    // GitHub uses different frameworks, so we listen to multiple events
     document.addEventListener('turbo:load', turboLoadHandler);
+    document.addEventListener('turbo:render', turboLoadHandler);
+    document.addEventListener('pjax:end', turboLoadHandler); // GitHub's old PJAX
+    document.addEventListener('page:load', turboLoadHandler); // Some GitHub pages
+    
+    // Also intercept pushState/replaceState for immediate detection
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+    
+    history.pushState = function(...args) {
+      originalPushState.apply(history, args);
+      setTimeout(handleNavigation, 50); // Small delay to let DOM update
+    };
+    
+    history.replaceState = function(...args) {
+      originalReplaceState.apply(history, args);
+      setTimeout(handleNavigation, 50);
+    };
     
     // Fallback: MutationObserver for textarea appearance and rendered description changes
+    // Also detects SPA navigation when main content is replaced
     mutationObserver = new MutationObserver((mutations) => {
       if (isPRPage()) {
         const textarea = getDescriptionField();
         const hasRenderedDescription = getRenderedDescription().length > 0 || getDescriptionContainer() !== null;
         
         // Check if textarea was added or replaced (GitHub might replace it dynamically)
+        // Also check if main content area was replaced (SPA navigation)
         let textareaAdded = false;
+        let mainContentReplaced = false;
+        
         for (const mutation of mutations) {
           if (mutation.type === 'childList') {
             for (const node of Array.from(mutation.addedNodes)) {
@@ -464,11 +510,35 @@ function safeInit(): void {
                 // Check if a textarea was added or if it's within the added node
                 if (element.tagName === 'TEXTAREA' || element.querySelector('textarea')) {
                   textareaAdded = true;
-                  break;
+                }
+                // Check if main content area was replaced (common in SPA navigation)
+                // GitHub uses classes like 'js-navigation-container', 'repository-content', etc.
+                if (element.matches && (
+                  element.matches('main, .js-navigation-container, .repository-content, [role="main"]') ||
+                  element.querySelector('main, .js-navigation-container, .repository-content, [role="main"]')
+                )) {
+                  mainContentReplaced = true;
+                  if (DEV_MODE) {
+                    console.log('[PR Guard] Main content replaced (SPA navigation detected)');
+                  }
                 }
               }
             }
           }
+        }
+        
+        // If main content was replaced, re-initialize everything
+        if (mainContentReplaced) {
+          if (DEV_MODE) {
+            console.log('[PR Guard] Re-initializing due to main content replacement');
+          }
+          cleanup();
+          setTimeout(() => {
+            if (isPRPage()) {
+              initializeGuard();
+            }
+          }, 200);
+          return;
         }
         
         // If we have a textarea and it's not initialized, initialize it
