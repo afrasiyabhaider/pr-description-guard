@@ -1,5 +1,5 @@
 import { validatePRDescription } from './validator';
-import { getDescriptionField, isPRPage } from './dom';
+import { getDescriptionField, isPRPage, getRenderedDescription, getDescriptionContainer } from './dom';
 
 /**
  * Debounce utility function
@@ -114,12 +114,12 @@ function removeWarning(): void {
 /**
  * Show warning with validation errors
  * Uses DOM methods to prevent XSS vulnerabilities
+ * Handles both textarea (edit mode) and rendered description (read-only view)
  */
 function showWarning(errors: Array<{ rule: string; message: string }>): void {
   removeWarning();
   
-  const textarea = getDescriptionField();
-  if (!textarea || errors.length === 0) {
+  if (errors.length === 0) {
     hasAnnounced = false;
     return;
   }
@@ -132,23 +132,53 @@ function showWarning(errors: Array<{ rule: string; message: string }>): void {
   warning.setAttribute('aria-live', 'polite');
   warning.setAttribute('aria-label', `PR Description Validation: ${errors.length} issue${errors.length === 1 ? '' : 's'} found`);
   
-  // Insert warning after textarea
-  textarea.parentNode?.insertBefore(warning, textarea.nextSibling);
-  hasAnnounced = true;
+  // Try to insert after textarea (edit mode)
+  const textarea = getDescriptionField();
+  if (textarea) {
+    textarea.parentNode?.insertBefore(warning, textarea.nextSibling);
+    hasAnnounced = true;
+    return;
+  }
+  
+  // If no textarea, try to insert in description container (read-only view)
+  const container = getDescriptionContainer();
+  if (container) {
+    // Insert at the beginning of the container or after the description content
+    const descriptionContent = container.querySelector('.comment-body, .markdown-body');
+    if (descriptionContent) {
+      descriptionContent.parentNode?.insertBefore(warning, descriptionContent.nextSibling);
+    } else {
+      container.insertBefore(warning, container.firstChild);
+    }
+    hasAnnounced = true;
+    return;
+  }
+  
+  // If we can't find a place to insert, don't show warning
+  hasAnnounced = false;
 }
 
 /**
  * Validate and show warning if needed
- * Caches DOM query to avoid multiple lookups
+ * Handles both textarea (edit mode) and rendered description (read-only view)
  */
 function validateAndShow(): void {
+  let description = '';
+  
+  // First, try to get description from textarea (edit mode)
   const textarea = getDescriptionField();
-  if (!textarea) {
+  if (textarea) {
+    description = textarea.value;
+  } else {
+    // If no textarea, try to get rendered description (read-only view)
+    description = getRenderedDescription();
+  }
+  
+  // If we still don't have a description, can't validate
+  if (!description && !textarea) {
     return;
   }
   
-  // Cache textarea value to avoid multiple property accesses
-  const description = textarea.value;
   const result = validatePRDescription(description);
   
   if (result.isValid) {
@@ -163,21 +193,23 @@ function validateAndShow(): void {
  * Initialize the guard on PR page
  * Includes retry mechanism for late-rendering textareas
  * Wraps event listeners in try-catch for error safety
+ * Handles both PR creation and existing PR edit modes
  */
 function initializeGuard(): void {
-  // Prevent duplicate initialization
-  if (document.body.classList.contains('pr-guard-initialized')) {
-    return;
-  }
-  
   let retries = 0;
-  const maxRetries = 3;
+  const maxRetries = 5; // Increased retries for edit mode
   
   const tryInit = () => {
     try {
       const textarea = getDescriptionField();
       
       if (textarea && textarea.dataset.prGuardInitialized !== 'true') {
+        // Clean up any existing handler for this textarea
+        if (validationHandler) {
+          textarea.removeEventListener('input', validationHandler);
+          textarea.removeEventListener('paste', validationHandler);
+        }
+        
         // Create debounced validation handler
         validationHandler = debounce(validateAndShow, 300);
         
@@ -192,7 +224,7 @@ function initializeGuard(): void {
           return; // Don't mark as initialized if listeners failed
         }
         
-        // Mark as initialized
+        // Mark as initialized for this specific textarea
         textarea.dataset.prGuardInitialized = 'true';
         document.body.classList.add('pr-guard-initialized');
         
@@ -202,7 +234,10 @@ function initializeGuard(): void {
         retries++;
         setTimeout(tryInit, 500);
       } else if (!textarea) {
-        if (DEV_MODE) {
+        // Don't warn if we're on an existing PR page (description might be read-only)
+        // Only warn if we're on a PR creation page
+        const isCreationPage = /\/compare\/|\/pull\/new/.test(location.pathname);
+        if (DEV_MODE && isCreationPage) {
           console.warn('[PR Guard] Could not find description field after retries');
         }
       }
@@ -262,6 +297,7 @@ function cleanup(): void {
     }
     
     document.body.classList.remove('pr-guard-initialized');
+    document.body.classList.remove('pr-guard-rendered-validated');
     hasAnnounced = false;
     validationHandler = null;
   } catch (error) {
@@ -335,7 +371,21 @@ function handleNavigation(): void {
 function safeInit(): void {
   try {
     if (isPRPage()) {
+      // Try to initialize for textarea (edit mode)
       initializeGuard();
+      
+      // Also validate rendered description if no textarea (read-only view)
+      const textarea = getDescriptionField();
+      if (!textarea) {
+        // Check if there's a rendered description
+        const description = getRenderedDescription();
+        const container = getDescriptionContainer();
+        if (description || container) {
+          // Validate the rendered description
+          validateAndShow();
+          document.body.classList.add('pr-guard-rendered-validated');
+        }
+      }
     }
     
     // Set up navigation detection
@@ -355,17 +405,75 @@ function safeInit(): void {
     // Optional: Listen to Turbo events if available
     document.addEventListener('turbo:load', turboLoadHandler);
     
-    // Fallback: Lightweight MutationObserver for textarea appearance
+    // Fallback: MutationObserver for textarea appearance and rendered description changes
     mutationObserver = new MutationObserver(() => {
-      if (isPRPage() && getDescriptionField() && !document.body.classList.contains('pr-guard-initialized')) {
-        initializeGuard();
+      if (isPRPage()) {
+        const textarea = getDescriptionField();
+        const hasRenderedDescription = getRenderedDescription().length > 0 || getDescriptionContainer() !== null;
+        
+        // If we have a textarea and it's not initialized, initialize it
+        if (textarea && !textarea.dataset.prGuardInitialized) {
+          // Reset initialization state if textarea changed (e.g., edit mode activated)
+          if (document.body.classList.contains('pr-guard-initialized')) {
+            document.body.classList.remove('pr-guard-initialized');
+          }
+          initializeGuard();
+        }
+        // If we have a rendered description (read-only view), validate it
+        else if (!textarea && hasRenderedDescription && !document.body.classList.contains('pr-guard-rendered-validated')) {
+          // Validate rendered description (read-only view)
+          validateAndShow();
+          document.body.classList.add('pr-guard-rendered-validated');
+        }
       }
     });
     
+    // Watch for changes in the document (including when edit button is clicked)
     mutationObserver.observe(document.body, {
       childList: true,
-      subtree: false // Only watch direct children
+      subtree: true // Need subtree: true to catch edit form appearance and description changes
     });
+    
+    // Also listen for click events on edit buttons to catch edit mode activation
+    // IMPORTANT: Only target description edit, not comment edit
+    const editButtonHandler = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // Find the edit button
+      const editButton = target.matches('button[aria-label*="Edit" i], .js-comment-edit-button, button[data-action="edit"]') 
+        ? target 
+        : target.closest('button[aria-label*="Edit" i], .js-comment-edit-button, button[data-action="edit"]') as HTMLElement;
+      
+      if (!editButton) return;
+      
+      // CRITICAL: Only handle if it's the PR description edit, NOT a comment edit
+      // The description edit is in the first timeline comment group
+      const isDescriptionEdit = editButton.closest('.timeline-comment-group:first-child, .js-issue-body, .timeline-comment:first-of-type');
+      const isCommentEdit = editButton.closest('.js-new-comment-form, .review-thread-reply-form, .inline-comment-form, .timeline-comment:not(:first-of-type)');
+      
+      // Only proceed if it's description edit, not comment edit
+      if (isDescriptionEdit && !isCommentEdit) {
+        // Reset initialization state to allow re-initialization
+        document.body.classList.remove('pr-guard-initialized');
+        
+        // Clear any existing initialization markers
+        const allTextareas = document.querySelectorAll<HTMLTextAreaElement>('textarea');
+        allTextareas.forEach(t => {
+          if (t.dataset.prGuardInitialized === 'true') {
+            t.dataset.prGuardInitialized = 'false';
+          }
+        });
+        
+        // Wait for the edit form to appear, then try to initialize
+        setTimeout(() => {
+          if (isPRPage()) {
+            initializeGuard();
+          }
+        }, 500); // Increased delay to ensure form is rendered
+      }
+    };
+    
+    document.addEventListener('click', editButtonHandler, true); // Use capture phase to catch events early
   } catch (error) {
     if (DEV_MODE) {
       console.warn('[PR Guard] Initialization failed:', error);
