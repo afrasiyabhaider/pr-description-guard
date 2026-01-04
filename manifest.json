@@ -3,7 +3,21 @@
   "name": "PR Description Guard",
   "version": "1.0.0",
   "description": "Validates GitHub PR descriptions to ensure they contain required sections: 'What changed', 'Why', and 'How it was tested'. Provides non-intrusive inline guidance without blocking PR creation.",
-  "permissions": [],
+  "permissions": [
+    "storage",
+    "contextMenus"
+  ],
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/context-menu.js"
+  },
   "content_scripts": [
     {
       "matches": [

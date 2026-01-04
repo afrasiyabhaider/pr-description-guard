@@ -36,7 +36,45 @@ let hasAnnounced = false;
 
 // Development mode flag (set to false in production)
 // Temporarily enabled for debugging
-const DEV_MODE = true;
+const DEV_MODE = false;
+
+// Settings state
+let settings = {
+  enableValidation: true,
+  showOnExistingPRs: true,
+  strictMode: false,
+};
+
+// Load settings from storage
+async function loadSettings(): Promise<void> {
+  try {
+    const result = await chrome.storage.sync.get({
+      enableValidation: true,
+      showOnExistingPRs: true,
+      strictMode: false,
+    });
+    settings = result as typeof settings;
+  } catch (error) {
+    if (DEV_MODE) {
+      console.warn('[PR Guard] Error loading settings:', error);
+    }
+    // Use defaults on error
+  }
+}
+
+// Listen for settings updates
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === 'SETTINGS_UPDATED') {
+    settings = message.settings;
+    // Re-validate if on PR page
+    if (isPRPage()) {
+      validateAndShow();
+    }
+  }
+});
+
+// Initialize settings
+loadSettings();
 
 /**
  * Build warning DOM structure from validation errors
@@ -164,6 +202,12 @@ function showWarning(errors: Array<{ rule: string; message: string }>): void {
  * Handles both textarea (edit mode) and rendered description (read-only view)
  */
 function validateAndShow(): void {
+  // Check if validation is enabled
+  if (!settings.enableValidation) {
+    removeWarning();
+    return;
+  }
+  
   let description = '';
   
   // First, try to get description from textarea (edit mode)
@@ -174,7 +218,13 @@ function validateAndShow(): void {
       console.log('[PR Guard] Validating textarea content, length:', description.length);
     }
   } else {
-    // If no textarea, try to get rendered description (read-only view)
+    // If no textarea, check if we should validate existing PRs
+    if (!settings.showOnExistingPRs) {
+      removeWarning();
+      return;
+    }
+    
+    // Try to get rendered description (read-only view)
     description = getRenderedDescription();
     if (DEV_MODE) {
       console.log('[PR Guard] Validating rendered description, length:', description.length);
