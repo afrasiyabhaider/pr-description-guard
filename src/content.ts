@@ -35,7 +35,8 @@ let currentPath = location.pathname;
 let hasAnnounced = false;
 
 // Development mode flag (set to false in production)
-const DEV_MODE = false;
+// Temporarily enabled for debugging
+const DEV_MODE = true;
 
 /**
  * Build warning DOM structure from validation errors
@@ -169,17 +170,30 @@ function validateAndShow(): void {
   const textarea = getDescriptionField();
   if (textarea) {
     description = textarea.value;
+    if (DEV_MODE) {
+      console.log('[PR Guard] Validating textarea content, length:', description.length);
+    }
   } else {
     // If no textarea, try to get rendered description (read-only view)
     description = getRenderedDescription();
+    if (DEV_MODE) {
+      console.log('[PR Guard] Validating rendered description, length:', description.length);
+    }
   }
   
   // If we still don't have a description, can't validate
   if (!description && !textarea) {
+    if (DEV_MODE) {
+      console.warn('[PR Guard] No description found, skipping validation');
+    }
     return;
   }
   
   const result = validatePRDescription(description);
+  
+  if (DEV_MODE) {
+    console.log('[PR Guard] Validation result:', result.isValid ? 'VALID' : `INVALID (${result.errors.length} errors)`, result.errors);
+  }
   
   if (result.isValid) {
     removeWarning();
@@ -203,42 +217,71 @@ function initializeGuard(): void {
     try {
       const textarea = getDescriptionField();
       
-      if (textarea && textarea.dataset.prGuardInitialized !== 'true') {
-        // Clean up any existing handler for this textarea
-        if (validationHandler) {
-          textarea.removeEventListener('input', validationHandler);
-          textarea.removeEventListener('paste', validationHandler);
-        }
+      if (textarea) {
+        // Check if already initialized - if so, just run validation (page might have reloaded)
+        const isAlreadyInitialized = textarea.dataset.prGuardInitialized === 'true';
         
-        // Create debounced validation handler
-        validationHandler = debounce(validateAndShow, 300);
-        
-        // Attach event listeners with error handling
-        try {
-          textarea.addEventListener('input', validationHandler);
-          textarea.addEventListener('paste', validationHandler);
-        } catch (error) {
-          if (DEV_MODE) {
-            console.warn('[PR Guard] Failed to attach event listeners:', error);
+        if (!isAlreadyInitialized) {
+          // Clean up any existing handler for this textarea
+          if (validationHandler) {
+            textarea.removeEventListener('input', validationHandler);
+            textarea.removeEventListener('paste', validationHandler);
           }
-          return; // Don't mark as initialized if listeners failed
+          
+          // Create debounced validation handler
+          validationHandler = debounce(validateAndShow, 300);
+          
+          // Attach event listeners with error handling
+          try {
+            textarea.addEventListener('input', validationHandler, { passive: true });
+            textarea.addEventListener('paste', validationHandler, { passive: true });
+            // Also listen to 'change' event as a fallback
+            textarea.addEventListener('change', validationHandler, { passive: true });
+            
+            if (DEV_MODE) {
+              console.log('[PR Guard] Event listeners attached to textarea');
+            }
+          } catch (error) {
+            if (DEV_MODE) {
+              console.warn('[PR Guard] Failed to attach event listeners:', error);
+            }
+            return; // Don't mark as initialized if listeners failed
+          }
+          
+          // Mark as initialized for this specific textarea
+          textarea.dataset.prGuardInitialized = 'true';
+          document.body.classList.add('pr-guard-initialized');
+        } else {
+          // If already initialized, verify listeners are still attached
+          // Sometimes GitHub replaces the textarea, breaking listeners
+          if (DEV_MODE) {
+            console.log('[PR Guard] Textarea already initialized, verifying listeners');
+          }
         }
         
-        // Mark as initialized for this specific textarea
-        textarea.dataset.prGuardInitialized = 'true';
-        document.body.classList.add('pr-guard-initialized');
-        
-        // Run initial validation
+        // Always run initial validation (even if already initialized, content might have changed)
+        if (DEV_MODE) {
+          console.log('[PR Guard] Running initial validation, textarea value length:', textarea.value.length);
+        }
         validateAndShow();
       } else if (!textarea && retries < maxRetries) {
         retries++;
+        if (DEV_MODE) {
+          console.log(`[PR Guard] Textarea not found, retry ${retries}/${maxRetries}`);
+        }
         setTimeout(tryInit, 500);
       } else if (!textarea) {
         // Don't warn if we're on an existing PR page (description might be read-only)
         // Only warn if we're on a PR creation page
         const isCreationPage = /\/compare\/|\/pull\/new/.test(location.pathname);
-        if (DEV_MODE && isCreationPage) {
-          console.warn('[PR Guard] Could not find description field after retries');
+        if (DEV_MODE) {
+          if (isCreationPage) {
+            console.warn('[PR Guard] Could not find description field after retries');
+            console.warn('[PR Guard] Current pathname:', location.pathname);
+            console.warn('[PR Guard] Available textareas:', document.querySelectorAll('textarea').length);
+          } else {
+            console.log('[PR Guard] On existing PR page, no textarea found (expected for read-only view)');
+          }
         }
       }
     } catch (error) {
@@ -406,17 +449,37 @@ function safeInit(): void {
     document.addEventListener('turbo:load', turboLoadHandler);
     
     // Fallback: MutationObserver for textarea appearance and rendered description changes
-    mutationObserver = new MutationObserver(() => {
+    mutationObserver = new MutationObserver((mutations) => {
       if (isPRPage()) {
         const textarea = getDescriptionField();
         const hasRenderedDescription = getRenderedDescription().length > 0 || getDescriptionContainer() !== null;
         
+        // Check if textarea was added or replaced (GitHub might replace it dynamically)
+        let textareaAdded = false;
+        for (const mutation of mutations) {
+          if (mutation.type === 'childList') {
+            for (const node of Array.from(mutation.addedNodes)) {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                const element = node as Element;
+                // Check if a textarea was added or if it's within the added node
+                if (element.tagName === 'TEXTAREA' || element.querySelector('textarea')) {
+                  textareaAdded = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+        
         // If we have a textarea and it's not initialized, initialize it
-        if (textarea && !textarea.dataset.prGuardInitialized) {
-          // Reset initialization state if textarea changed (e.g., edit mode activated)
+        // Also re-initialize if textarea was just added (might be a replacement)
+        if (textarea && (!textarea.dataset.prGuardInitialized || textareaAdded)) {
+          // Reset initialization state if textarea changed (e.g., edit mode activated or replaced)
           if (document.body.classList.contains('pr-guard-initialized')) {
             document.body.classList.remove('pr-guard-initialized');
           }
+          // Clear the initialization flag so it can be re-initialized
+          textarea.dataset.prGuardInitialized = 'false';
           initializeGuard();
         }
         // If we have a rendered description (read-only view), validate it

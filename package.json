@@ -8,7 +8,7 @@
     "build": "vite build",
     "test": "vitest",
     "test:run": "vitest run",
-    "package": "npm run build && cd dist && zip -r ../pr-description-guard.zip manifest.json content.js styles.css icons/",
+    "package": "bash ignore/scripts/package-extension.sh",
     "package:verify": "unzip -l pr-description-guard.zip | grep -E '\\.(js|json|css|png)$|manifest|icons' || echo 'No package found'"
   },
   "devDependencies": {
