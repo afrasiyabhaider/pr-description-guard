@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PR Description Guard",
   "version": "1.0.0",
-  "description": "Validates GitHub PR descriptions for required sections",
+  "description": "Validates GitHub PR descriptions to ensure they contain required sections: 'What changed', 'Why', and 'How it was tested'. Provides non-intrusive inline guidance without blocking PR creation.",
   "permissions": [],
   "content_scripts": [
     {
@@ -21,5 +21,6 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "privacy_policy": "https://github.com/YOUR_USERNAME/pr-description-guard/blob/main/PRIVACY.md"
+  "privacy_policy": "https://github.com/afrasiyabhaider/pr-description-guard/blob/main/PRIVACY.md",
+  "homepage_url": "https://github.com/afrasiyabhaider/pr-description-guard"
 }
