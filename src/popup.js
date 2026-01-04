@@ -28,13 +28,23 @@ async function loadSettings() {
  */
 async function saveSettings(settings) {
   try {
+    // Save to storage first - this will trigger storage.onChanged listener in content script
     await chrome.storage.sync.set(settings);
-    // Notify content script of settings change
-    chrome.tabs.query({ url: '*://github.com/*' }, (tabs) => {
-      tabs.forEach(tab => {
-        chrome.tabs.sendMessage(tab.id, { type: 'SETTINGS_UPDATED', settings });
-      });
-    });
+    
+    // Also try to send message directly (faster, but storage listener is fallback)
+    try {
+      const tabs = await chrome.tabs.query({ url: '*://github.com/*' });
+      for (const tab of tabs) {
+        try {
+          await chrome.tabs.sendMessage(tab.id, { type: 'SETTINGS_UPDATED', settings });
+        } catch (error) {
+          // Message failed, but storage listener will handle it
+          // This is fine - storage.onChanged is more reliable
+        }
+      }
+    } catch (error) {
+      // Query failed, but storage listener will still work
+    }
   } catch (error) {
     console.error('Error saving settings:', error);
   }

@@ -77,19 +77,71 @@ async function loadSettings(): Promise<void> {
   }
 }
 
-// Listen for settings updates
-chrome.runtime.onMessage.addListener((message) => {
+// Function to apply settings changes
+function applySettingsChange(newSettings: typeof settings): void {
+  const oldValidationState = settings.enableValidation;
+  settings = newSettings;
+  
+  // Immediately apply the setting change
+  if (!settings.enableValidation) {
+    // If validation is disabled, remove warning immediately
+    removeWarning();
+    // Also stop any running validation
+    isValidationRunning = false;
+  } else if (isPRPage()) {
+    // If validation is enabled, always re-validate immediately (regardless of previous state)
+    // Reset validation state to allow immediate validation
+    isValidationRunning = false;
+    lastValidationTime = 0; // Reset cooldown to allow immediate validation
+    
+    // Force immediate validation - use multiple attempts to ensure it works
+    const runValidation = () => {
+      if (isPRPage() && settings.enableValidation) {
+        validateAndShow();
+      }
+    };
+    
+    // Run immediately
+    runValidation();
+    
+    // Also run after small delays to ensure DOM is ready
+    setTimeout(runValidation, 50);
+    setTimeout(runValidation, 100);
+    setTimeout(runValidation, 200);
+  }
+}
+
+// Listen for settings updates via messages
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'SETTINGS_UPDATED') {
-    settings = message.settings;
-    // Re-validate if on PR page
-    if (isPRPage()) {
-      validateAndShow();
-    }
+    applySettingsChange(message.settings);
+    sendResponse({ success: true });
+    return true;
+  }
+  return false;
+});
+
+// Also listen for storage changes as a fallback (more reliable)
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'sync' && changes) {
+    // Reload all settings from storage
+    loadSettings().then(() => {
+      // Apply the changes
+      if (changes.enableValidation || changes.showOnExistingPRs || changes.strictMode) {
+        applySettingsChange(settings);
+      }
+    });
   }
 });
 
-// Initialize settings
-loadSettings();
+// Initialize settings and wait for them to load before any validation
+(async () => {
+  await loadSettings();
+  // After settings are loaded, if validation is disabled, make sure warning is removed
+  if (!settings.enableValidation) {
+    removeWarning();
+  }
+})();
 
 /**
  * Build warning DOM structure from validation errors
@@ -488,14 +540,21 @@ function showWarning(errors: Array<{ rule: string; message: string }>): void {
  * Includes throttling to prevent excessive validation runs
  */
 function validateAndShow(): void {
-  // Prevent concurrent validation runs
+  // Check if validation is enabled FIRST - before any other checks
+  if (!settings.enableValidation) {
+    removeWarning();
+    return;
+  }
+  
+  // Prevent concurrent validation runs (but allow if forced)
   if (isValidationRunning) {
     return;
   }
   
   // Throttle validation to prevent excessive calls
+  // But allow immediate validation if cooldown was reset (for settings changes)
   const now = Date.now();
-  if (now - lastValidationTime < VALIDATION_COOLDOWN) {
+  if (lastValidationTime > 0 && now - lastValidationTime < VALIDATION_COOLDOWN) {
     return;
   }
   lastValidationTime = now;
@@ -503,11 +562,6 @@ function validateAndShow(): void {
   isValidationRunning = true;
   
   try {
-    // Check if validation is enabled
-    if (!settings.enableValidation) {
-      removeWarning();
-      return;
-    }
     
     let description = '';
     
