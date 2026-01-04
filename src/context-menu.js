@@ -25,13 +25,6 @@ function createContextMenus() {
     });
     
     chrome.contextMenus.create({
-      id: 'pr-guard-about',
-      parentId: 'pr-guard-main',
-      title: 'About',
-      contexts: ['page', 'editable'],
-    });
-    
-    chrome.contextMenus.create({
       id: 'pr-guard-separator',
       parentId: 'pr-guard-main',
       type: 'separator',
@@ -55,13 +48,6 @@ function handleMenuClick(info, tab) {
     case 'pr-guard-settings':
       // Open popup/settings page
       chrome.action.openPopup();
-      break;
-      
-    case 'pr-guard-about':
-      // Open about page (could be a new tab or the popup)
-      chrome.tabs.create({
-        url: chrome.runtime.getURL('src/popup.html'),
-      });
       break;
       
     case 'pr-guard-coffee':

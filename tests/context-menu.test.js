@@ -43,7 +43,8 @@ describe('Context Menu', () => {
       contextMenuModule.createContextMenus();
       
       expect(mockChrome.contextMenus.removeAll).toHaveBeenCalled();
-      expect(mockChrome.contextMenus.create).toHaveBeenCalledTimes(5);
+      // Main menu + Settings + Separator + Buy me coffee = 4 items (About was removed)
+      expect(mockChrome.contextMenus.create).toHaveBeenCalledTimes(4);
     });
     
     it('should create main menu item with correct properties', () => {
@@ -73,21 +74,6 @@ describe('Context Menu', () => {
       expect(mockChrome.contextMenus.create).toHaveBeenCalledWith(menuItem);
       expect(menuItem.parentId).toBe('pr-guard-main');
       expect(menuItem.title).toBe('Settings');
-    });
-    
-    it('should create about submenu item with correct properties', () => {
-      const menuItem = {
-        id: 'pr-guard-about',
-        parentId: 'pr-guard-main',
-        title: 'About',
-        contexts: ['page', 'editable'],
-      };
-      
-      mockChrome.contextMenus.create(menuItem);
-      
-      expect(mockChrome.contextMenus.create).toHaveBeenCalledWith(menuItem);
-      expect(menuItem.parentId).toBe('pr-guard-main');
-      expect(menuItem.title).toBe('About');
     });
     
     it('should create separator menu item', () => {
@@ -131,16 +117,18 @@ describe('Context Menu', () => {
       expect(mockChrome.action.openPopup).toHaveBeenCalled();
     });
     
-    it('should handle about menu click', async () => {
+    it('should handle unknown menu item IDs gracefully', async () => {
       const contextMenuModule = await import('../src/context-menu.js');
-      const info = { menuItemId: 'pr-guard-about' };
+      const info = { menuItemId: 'pr-guard-about' }; // This menu item no longer exists
       const tab = { id: 1 };
       
-      contextMenuModule.handleMenuClick(info, tab);
+      // Should not throw and should not call any Chrome APIs
+      expect(() => {
+        contextMenuModule.handleMenuClick(info, tab);
+      }).not.toThrow();
       
-      expect(mockChrome.tabs.create).toHaveBeenCalledWith({
-        url: 'chrome-extension://test-id/src/popup.html',
-      });
+      expect(mockChrome.tabs.create).not.toHaveBeenCalled();
+      expect(mockChrome.action.openPopup).not.toHaveBeenCalled();
     });
     
     it('should handle buy me coffee menu click', async () => {

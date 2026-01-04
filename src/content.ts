@@ -35,8 +35,8 @@ let currentPath = location.pathname;
 let hasAnnounced = false;
 
 // Development mode flag (set to false in production)
-// Temporarily enabled for debugging
-const DEV_MODE = false;
+// Temporarily enabled for debugging SPA navigation
+const DEV_MODE = true;
 
 // Settings state
 let settings = {
@@ -464,8 +464,29 @@ function handleNavigation(): void {
           if (DEV_MODE) {
             console.log('[PR Guard] Initializing after SPA navigation to:', newPath);
           }
-          initializeGuard();
-        }, 100); // Reduced delay for faster initialization
+          // Use retry logic for SPA navigation as DOM might not be ready
+          let retries = 0;
+          const maxRetries = 10;
+          const retryInterval = 200;
+          
+          const tryInit = () => {
+            const textarea = getDescriptionField();
+            if (textarea || retries >= maxRetries) {
+              initializeGuard();
+              if (DEV_MODE && retries > 0) {
+                console.log(`[PR Guard] Initialized after ${retries} retries`);
+              }
+            } else {
+              retries++;
+              if (DEV_MODE) {
+                console.log(`[PR Guard] Retry ${retries}/${maxRetries} - waiting for textarea...`);
+              }
+              setTimeout(tryInit, retryInterval);
+            }
+          };
+          
+          tryInit();
+        }, 50); // Reduced delay for faster initialization
       } else {
         // Not on PR page, cleanup already done above
         if (navigationInterval) {
@@ -530,22 +551,40 @@ function safeInit(): void {
     const originalPushState = history.pushState;
     const originalReplaceState = history.replaceState;
     
-    history.pushState = function(...args) {
+    history.pushState = function(...args: Parameters<typeof history.pushState>) {
       originalPushState.apply(history, args);
-      setTimeout(handleNavigation, 50); // Small delay to let DOM update
+      if (DEV_MODE) {
+        console.log('[PR Guard] pushState intercepted:', args[2]);
+      }
+      // Immediate check, then retry after DOM updates
+      handleNavigation();
+      setTimeout(handleNavigation, 100);
+      setTimeout(handleNavigation, 300);
+      setTimeout(handleNavigation, 500);
     };
     
-    history.replaceState = function(...args) {
+    history.replaceState = function(...args: Parameters<typeof history.replaceState>) {
       originalReplaceState.apply(history, args);
-      setTimeout(handleNavigation, 50);
+      if (DEV_MODE) {
+        console.log('[PR Guard] replaceState intercepted:', args[2]);
+      }
+      // Immediate check, then retry after DOM updates
+      handleNavigation();
+      setTimeout(handleNavigation, 100);
+      setTimeout(handleNavigation, 300);
+      setTimeout(handleNavigation, 500);
     };
     
     // Fallback: MutationObserver for textarea appearance and rendered description changes
     // Also detects SPA navigation when main content is replaced
+    // Watch the entire document body for changes (GitHub replaces large sections)
     mutationObserver = new MutationObserver((mutations) => {
-      if (isPRPage()) {
-        const textarea = getDescriptionField();
-        const hasRenderedDescription = getRenderedDescription().length > 0 || getDescriptionContainer() !== null;
+      if (!isPRPage()) {
+        return; // Not on PR page, ignore mutations
+      }
+      
+      const textarea = getDescriptionField();
+      const hasRenderedDescription = getRenderedDescription().length > 0 || getDescriptionContainer() !== null;
         
         // Check if textarea was added or replaced (GitHub might replace it dynamically)
         // Also check if main content area was replaced (SPA navigation)
@@ -583,31 +622,50 @@ function safeInit(): void {
             console.log('[PR Guard] Re-initializing due to main content replacement');
           }
           cleanup();
-          setTimeout(() => {
-            if (isPRPage()) {
-              initializeGuard();
+          // Use retry logic for content replacement
+          let retries = 0;
+          const maxRetries = 10;
+          const retryInterval = 200;
+          
+          const tryInit = () => {
+            if (!isPRPage()) {
+              return; // No longer on PR page
             }
-          }, 200);
+            const textarea = getDescriptionField();
+            if (textarea || retries >= maxRetries) {
+              initializeGuard();
+              if (DEV_MODE && retries > 0) {
+                console.log(`[PR Guard] Initialized after content replacement (${retries} retries)`);
+              }
+            } else {
+              retries++;
+              if (DEV_MODE) {
+                console.log(`[PR Guard] Content replacement retry ${retries}/${maxRetries} - waiting for textarea...`);
+              }
+              setTimeout(tryInit, retryInterval);
+            }
+          };
+          
+          setTimeout(tryInit, 100);
           return;
         }
         
-        // If we have a textarea and it's not initialized, initialize it
-        // Also re-initialize if textarea was just added (might be a replacement)
-        if (textarea && (!textarea.dataset.prGuardInitialized || textareaAdded)) {
-          // Reset initialization state if textarea changed (e.g., edit mode activated or replaced)
-          if (document.body.classList.contains('pr-guard-initialized')) {
-            document.body.classList.remove('pr-guard-initialized');
-          }
-          // Clear the initialization flag so it can be re-initialized
-          textarea.dataset.prGuardInitialized = 'false';
-          initializeGuard();
+      // If we have a textarea and it's not initialized, initialize it
+      // Also re-initialize if textarea was just added (might be a replacement)
+      if (textarea && (!textarea.dataset.prGuardInitialized || textareaAdded)) {
+        // Reset initialization state if textarea changed (e.g., edit mode activated or replaced)
+        if (document.body.classList.contains('pr-guard-initialized')) {
+          document.body.classList.remove('pr-guard-initialized');
         }
-        // If we have a rendered description (read-only view), validate it
-        else if (!textarea && hasRenderedDescription && !document.body.classList.contains('pr-guard-rendered-validated')) {
-          // Validate rendered description (read-only view)
-          validateAndShow();
-          document.body.classList.add('pr-guard-rendered-validated');
-        }
+        // Clear the initialization flag so it can be re-initialized
+        textarea.dataset.prGuardInitialized = 'false';
+        initializeGuard();
+      }
+      // If we have a rendered description (read-only view), validate it
+      else if (!textarea && hasRenderedDescription && !document.body.classList.contains('pr-guard-rendered-validated')) {
+        // Validate rendered description (read-only view)
+        validateAndShow();
+        document.body.classList.add('pr-guard-rendered-validated');
       }
     });
     
