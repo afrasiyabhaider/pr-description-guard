@@ -10,9 +10,23 @@ export function getDescriptionField(): HTMLTextAreaElement | null {
   // First, try to find PR description edit form (when editing existing PR description)
   // This appears when you click "Edit" on the PR description (not comments)
   const descriptionEditSelectors = [
-    // PR creation pages
+    // PR creation pages - primary selectors
     '#pull_request_body',
     'textarea[name="pull_request[body]"]',
+    'textarea[id="pull_request_body"]',
+    
+    // PR creation pages - alternative selectors
+    'form[action*="/compare"] textarea',
+    'form[action*="/pull/new"] textarea',
+    '.js-new-pr-form textarea',
+    '.pull-request-form textarea',
+    '.js-comment-form textarea',
+    '.comment-form-textarea',
+    
+    // PR creation pages - aria-label based
+    'textarea[aria-label*="description" i]',
+    'textarea[aria-label*="body" i]',
+    'textarea[placeholder*="description" i]',
     
     // Existing PR description edit form (when clicking Edit on description)
     // These are in the first comment/timeline item, not in the comment form
@@ -49,11 +63,45 @@ export function getDescriptionField(): HTMLTextAreaElement | null {
   for (const textarea of allTextareas) {
     // Skip comment forms
     const isInCommentForm = textarea.closest('.js-new-comment-form, .review-thread-reply-form, .inline-comment-form, .js-new-comment-field');
+    
+    // Check if it's in a PR creation form
+    const isInPRForm = textarea.closest('form[action*="/compare"], form[action*="/pull/new"], .js-new-pr-form, .pull-request-form');
+    
+    // Check if it's in description edit area
     const isInDescriptionArea = textarea.closest('.timeline-comment-group:first-child, .js-issue-body, form[action*="/issues/"]');
     
+    // Check for PR description identifiers
+    const isPRDescriptionField = 
+      textarea.name === 'pull_request[body]' || 
+      textarea.id === 'pull_request_body' ||
+      textarea.getAttribute('name')?.includes('pull_request') ||
+      textarea.getAttribute('id')?.includes('pull_request');
+    
     // Only accept description areas, never comment forms
-    if (!isInCommentForm && (isInDescriptionArea || textarea.name === 'pull_request[body]' || textarea.id === 'pull_request_body')) {
+    // Accept if: (1) in PR form, (2) in description area, or (3) has PR description identifiers
+    if (!isInCommentForm && (isInPRForm || isInDescriptionArea || isPRDescriptionField)) {
       return textarea;
+    }
+  }
+  
+  // Last resort: On PR creation pages, accept any textarea that's not clearly a comment field
+  // This is more permissive but necessary if GitHub changes their DOM structure
+  const isCreationPage = /\/compare\/|\/pull\/new/.test(location.pathname);
+  if (isCreationPage) {
+    const allTextareas = document.querySelectorAll<HTMLTextAreaElement>('textarea');
+    for (const textarea of allTextareas) {
+      // Only exclude if it's clearly in a comment form
+      const isInCommentForm = textarea.closest('.js-new-comment-form, .review-thread-reply-form, .inline-comment-form, .js-new-comment-field');
+      // Exclude if it's in a review comment thread
+      const isInReviewThread = textarea.closest('.review-thread, .inline-comment-form-container');
+      // Exclude if it has comment-specific attributes
+      const isCommentField = textarea.getAttribute('placeholder')?.toLowerCase().includes('leave a comment') ||
+                            textarea.getAttribute('aria-label')?.toLowerCase().includes('comment');
+      
+      if (!isInCommentForm && !isInReviewThread && !isCommentField) {
+        // This is likely the PR description field on a creation page
+        return textarea;
+      }
     }
   }
   
