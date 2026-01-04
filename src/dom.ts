@@ -19,7 +19,11 @@ export function getDescriptionField(): HTMLTextAreaElement | null {
     }
   }
   
-  console.warn('[PR Guard] Could not find description field');
+  // Only log in development mode
+  // In production, fail silently to avoid console noise
+  if (typeof window !== 'undefined' && (window as any).__PR_GUARD_DEV__) {
+    console.warn('[PR Guard] Could not find description field');
+  }
   return null;
 }
 
@@ -60,5 +64,9 @@ export function getSubmitButton(): HTMLButtonElement | null {
  * @returns True if page is a PR page
  */
 export function isPRPage(pathname: string = location.pathname): boolean {
+  // Handle edge case where pathname might be undefined
+  if (!pathname) {
+    return false;
+  }
   return /\/compare\/|\/pull\/(new|\d+)/.test(pathname);
 }
