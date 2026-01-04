@@ -60,32 +60,39 @@ process_screenshot() {
 # 4 = 1 issue  
 # 5 = No issues
 
+# Use find to get exact filenames
+SCREENSHOT1=$(find "$SCREENSHOTS_DIR" -name "*1.37.10*" -type f | head -1)
+SCREENSHOT2=$(find "$SCREENSHOTS_DIR" -name "*1.37.19*" -type f | head -1)
+SCREENSHOT3=$(find "$SCREENSHOTS_DIR" -name "*1.37.43*" -type f | head -1)
+SCREENSHOT4=$(find "$SCREENSHOTS_DIR" -name "*1.37.53*" -type f | head -1)
+SCREENSHOT5=$(find "$SCREENSHOTS_DIR" -name "*1.41.22*" -type f | head -1)
+
 process_screenshot \
-    "screenshots/Screenshot 2026-01-04 at 1.37.10 PM.png" \
+    "$SCREENSHOT1" \
     "$OUTPUT_DIR/screenshot-1-all-issues.png" \
     "PR Description Guard" \
     "3 Missing Sections: What changed, Why, How it was tested"
 
 process_screenshot \
-    "screenshots/Screenshot 2026-01-04 at 1.37.19 PM.png" \
+    "$SCREENSHOT2" \
     "$OUTPUT_DIR/screenshot-2-all-issues.png" \
     "PR Description Guard" \
     "3 Missing Sections: What changed, Why, How it was tested"
 
 process_screenshot \
-    "screenshots/Screenshot 2026-01-04 at 1.37.43 PM.png" \
+    "$SCREENSHOT3" \
     "$OUTPUT_DIR/screenshot-3-two-issues.png" \
     "PR Description Guard" \
     "2 Missing Sections: Real-time validation as you type"
 
 process_screenshot \
-    "screenshots/Screenshot 2026-01-04 at 1.37.53 PM.png" \
+    "$SCREENSHOT4" \
     "$OUTPUT_DIR/screenshot-4-one-issue.png" \
     "PR Description Guard" \
     "1 Missing Section: Almost there!"
 
 process_screenshot \
-    "screenshots/Screenshot 2026-01-04 at 1.41.22 PM.png" \
+    "$SCREENSHOT5" \
     "$OUTPUT_DIR/screenshot-5-no-issues.png" \
     "PR Description Guard" \
     "All Sections Validated ✓ Ready to submit!"
