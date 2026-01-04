@@ -16,18 +16,24 @@ add_overlay() {
     local title="$3"
     local subtitle="$4"
     
-    # Create overlay with icon and text - using more visible settings
+    # Create text overlay image first (more reliable)
+    magick -size 700x220 xc:'rgba(0,0,0,0.92)' \
+        -font 'Helvetica-Bold' -pointsize 42 -fill white \
+        -gravity northwest -annotate +30+30 "$title" \
+        -font 'Helvetica' -pointsize 26 -fill '#F8F8F8' \
+        -gravity northwest -annotate +30+90 "$subtitle" \
+        -bordercolor 'rgba(0,0,0,0.92)' -border 25 \
+        /tmp/text_overlay.png
+    
+    # Composite icon, text overlay, and screenshot
     magick "$input" \
-        \( "$ICON" -resize 120x120 \) \
-        -gravity northwest -geometry +40+40 -composite \
-        \( -size 650x200 xc:'rgba(0,0,0,0.9)' \
-           -font Helvetica-Bold -pointsize 40 -fill white \
-           -gravity northwest -annotate +25+25 "$title" \
-           -font Helvetica -pointsize 24 -fill '#F5F5F5' \
-           -gravity northwest -annotate +25+80 "$subtitle" \
-           -bordercolor 'rgba(0,0,0,0.9)' -border 20 \
-        \) -gravity northeast -geometry +40+40 -composite \
+        \( "$ICON" -resize 130x130 \) \
+        -gravity northwest -geometry +50+50 -composite \
+        /tmp/text_overlay.png \
+        -gravity northeast -geometry +50+50 -composite \
         "$output"
+    
+    rm -f /tmp/text_overlay.png
 }
 
 # Screenshot 1: All issues (3 missing sections)
