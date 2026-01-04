@@ -276,6 +276,31 @@ function cleanup(): void {
  * Handle navigation changes
  * Wrapped in try-catch for error safety
  */
+/**
+ * Start or stop navigation interval based on current page
+ * DRY helper to avoid code duplication
+ */
+function manageNavigationInterval(): void {
+  if (isPRPage() && !navigationInterval) {
+    navigationInterval = setInterval(() => {
+      handleNavigation();
+      if (!isPRPage()) {
+        if (navigationInterval) {
+          clearInterval(navigationInterval);
+          navigationInterval = null;
+        }
+      }
+    }, 2000);
+  } else if (!isPRPage() && navigationInterval) {
+    clearInterval(navigationInterval);
+    navigationInterval = null;
+  }
+}
+
+/**
+ * Handle navigation changes
+ * Wrapped in try-catch for error safety
+ */
 function handleNavigation(): void {
   try {
     const newPath = location.pathname;
@@ -283,28 +308,18 @@ function handleNavigation(): void {
     if (newPath !== currentPath) {
       currentPath = newPath;
       
-    if (isPRPage(newPath)) {
-      // Start navigation interval if not already running
-      if (!navigationInterval) {
-        navigationInterval = setInterval(() => {
-          handleNavigation();
-          if (!isPRPage()) {
-            if (navigationInterval) {
-              clearInterval(navigationInterval);
-              navigationInterval = null;
-            }
-          }
-        }, 2000);
+      if (isPRPage(newPath)) {
+        // Start navigation interval if not already running
+        manageNavigationInterval();
+        
+        // Debounce initialization to avoid multiple rapid calls
+        if (initTimeout) {
+          clearTimeout(initTimeout);
+        }
+        initTimeout = setTimeout(initializeGuard, 500);
+      } else {
+        cleanup();
       }
-      
-      // Debounce initialization to avoid multiple rapid calls
-      if (initTimeout) {
-        clearTimeout(initTimeout);
-      }
-      initTimeout = setTimeout(initializeGuard, 500);
-    } else {
-      cleanup();
-    }
     }
   } catch (error) {
     if (DEV_MODE) {
@@ -328,26 +343,10 @@ function safeInit(): void {
     popstateHandler = handleNavigation;
     turboLoadHandler = handleNavigation;
     
-    // Primary: Check URL on interval (only when on PR page or navigating)
-    // Optimize: Only run interval when needed
-    const startNavigationInterval = () => {
-      if (!navigationInterval) {
-        navigationInterval = setInterval(() => {
-          handleNavigation();
-          // Stop interval if not on PR page
-          if (!isPRPage()) {
-            if (navigationInterval) {
-              clearInterval(navigationInterval);
-              navigationInterval = null;
-            }
-          }
-        }, 2000);
-      }
-    };
-    
-    // Start interval if on PR page
+    // Primary: Check URL on interval (only when on PR page)
+    // Use helper function to avoid duplication
     if (isPRPage()) {
-      startNavigationInterval();
+      manageNavigationInterval();
     }
     
     // Secondary: Listen to browser navigation

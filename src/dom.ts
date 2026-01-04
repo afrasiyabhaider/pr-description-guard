@@ -21,8 +21,11 @@ export function getDescriptionField(): HTMLTextAreaElement | null {
   
   // Only log in development mode
   // In production, fail silently to avoid console noise
-  if (typeof window !== 'undefined' && (window as any).__PR_GUARD_DEV__) {
-    console.warn('[PR Guard] Could not find description field');
+  if (typeof window !== 'undefined') {
+    const devWindow = window as typeof window & { __PR_GUARD_DEV__?: boolean };
+    if (devWindow.__PR_GUARD_DEV__) {
+      console.warn('[PR Guard] Could not find description field');
+    }
   }
   return null;
 }
@@ -31,8 +34,11 @@ export function getDescriptionField(): HTMLTextAreaElement | null {
  * Get the submit button element
  * Uses JavaScript text matching since CSS :has-text() doesn't exist
  * 
+ * Note: Currently unused but kept for potential future use (e.g., disabling submit button)
+ * 
  * @returns The submit button element or null if not found
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getSubmitButton(): HTMLButtonElement | null {
   // Find all submit buttons
   const buttons = document.querySelectorAll<HTMLButtonElement>('button[type="submit"]');
