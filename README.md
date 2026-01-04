@@ -51,7 +51,9 @@ See [PRIVACY.md](./PRIVACY.md) for more details.
 - 💡 **Have a feature request?** [Start a discussion](https://github.com/afrasiyabhaider/pr-description-guard/discussions/new)
 - ❓ **Have a question?** [Ask in discussions](https://github.com/afrasiyabhaider/pr-description-guard/discussions)
 
-**Note:** This repository is private. Code is not publicly available, but we welcome your feedback and bug reports!
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request or open an issue for bugs and feature requests.
 
 ## License
 
