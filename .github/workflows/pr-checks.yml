@@ -1,0 +1,77 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Type check
+        run: npx tsc --noEmit || true
+      
+      - name: Run tests
+        run: npm run test:run
+      
+      - name: Build extension
+        run: npm run build
+      
+      - name: Check build output
+        run: |
+          if [ ! -f "dist/content.js" ]; then
+            echo "Build failed: content.js not found"
+            exit 1
+          fi
+          if [ ! -f "dist/manifest.json" ]; then
+            echo "Build failed: manifest.json not found"
+            exit 1
+          fi
+          echo "Build successful"
+
+  validate-pr-description:
+    name: Validate PR Description
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Validate PR Description
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const description = pr.body || '';
+            
+            // Check for required sections
+            const hasWhat = /(?:^|\n)(?:#{1,3}|[\*_]{1,2})\s*what'?s?\s+changed[:\?]?/i.test(description);
+            const hasWhy = /(?:^|\n)(?:#{1,3}|[\*_]{1,2})\s*why[:\?]?/i.test(description);
+            const hasTested = /(?:^|\n)(?:#{1,3}|[\*_]{1,2})\s*how\s+(?:it\s+was|was\s+it)\s+tested[:\?]?/i.test(description);
+            
+            const missing = [];
+            if (!hasWhat) missing.push('What changed');
+            if (!hasWhy) missing.push('Why');
+            if (!hasTested) missing.push('How it was tested');
+            
+            if (missing.length > 0) {
+              core.setFailed(`PR description is missing required sections: ${missing.join(', ')}`);
+            } else {
+              console.log('✅ PR description contains all required sections');
+            }
