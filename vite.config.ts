@@ -39,6 +39,14 @@ export default defineConfig({
         if (!existsSync(iconsDir)) {
           mkdirSync(iconsDir, { recursive: true });
         }
+        // Copy icon files
+        const iconSizes = [16, 48, 128];
+        iconSizes.forEach(size => {
+          copyFileSync(
+            resolve(__dirname, `icons/icon${size}.png`),
+            resolve(__dirname, `dist/icons/icon${size}.png`)
+          );
+        });
       },
     },
   ],
