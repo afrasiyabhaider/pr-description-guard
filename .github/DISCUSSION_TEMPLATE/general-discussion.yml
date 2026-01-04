@@ -1,0 +1,35 @@
+title: "💬 General Discussion"
+labels: ["discussion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start a general discussion about the extension, ideas, or anything related!
+        
+        This is a great place for:
+        - Sharing ideas
+        - Discussing best practices
+        - Community feedback
+        - General questions
+  - type: textarea
+    id: topic
+    attributes:
+      label: "Discussion Topic"
+      description: "What would you like to discuss?"
+      placeholder: "I'd like to discuss..."
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: "Details"
+      description: "Provide more details about your discussion topic"
+      placeholder: "Let's talk about..."
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: "Additional Context"
+      description: "Any additional context or information"
+      placeholder: "Related links, examples, or background information..."

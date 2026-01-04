@@ -36,9 +36,10 @@ const SECTION_PATTERNS = {
 
 /**
  * Check if text contains a section matching the regex pattern
+ * Uses String.search() instead of RegExp.test() to avoid potential state issues
  */
 function hasSection(text: string, pattern: RegExp): boolean {
-  return pattern.test(text);
+  return text.search(pattern) !== -1;
 }
 
 /**

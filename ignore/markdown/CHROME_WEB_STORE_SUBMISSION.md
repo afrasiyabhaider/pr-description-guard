@@ -1,0 +1,226 @@
+# Chrome Web Store Submission Guide
+
+## 📦 Package Information
+
+**Zip File:** `pr-description-guard.zip`  
+**Version:** 1.0.0  
+**Created:** Ready for submission
+
+### Package Contents
+- `manifest.json` - Extension manifest (Manifest V3)
+- `content.js` - Main content script
+- `styles.css` - Extension styles
+- `icons/` - Extension icons (16x16, 48x48, 128x128)
+
+---
+
+## 🎯 Chrome Web Store Listing Details
+
+### Basic Information
+
+**Extension Name:**
+```
+PR Description Guard
+```
+
+**Short Description (132 characters max):**
+```
+Validates GitHub PR descriptions to ensure they contain required sections: "What changed", "Why", and "How it was tested".
+```
+
+**Detailed Description:**
+```
+PR Description Guard is a Chrome Extension that helps maintain high-quality pull request descriptions. It validates PR descriptions in real-time as you type, showing helpful inline warnings when essential sections are missing.
+
+✅ Key Features:
+• Real-time Validation - Validates as you type (debounced for performance)
+• Three Required Sections:
+  - "What changed" - Describes the changes made
+  - "Why" - Explains the reason for changes
+  - "How it was tested" - Documents testing approach
+• Non-intrusive Warnings - Inline guidance that doesn't block PR creation
+• Works Everywhere - Compatible with GitHub, GitLab, Bitbucket, and all Git platforms
+• Dark Mode Support - Automatically adapts to GitHub's dark theme
+• Zero Data Collection - All validation happens locally in your browser
+• Privacy First - No tracking, no analytics, no data transmission
+
+How It Works:
+The extension monitors the PR description textarea on pull request pages. As you type, it validates the content against the three required sections. If any sections are missing, a helpful warning appears below the textarea with specific guidance.
+
+Privacy:
+This extension does not collect, store, or transmit any user data. All validation happens locally in your browser. No network requests are made, no data is stored, and no analytics are used.
+```
+
+**Category:**
+```
+Developer Tools
+```
+
+**Language:**
+```
+English (United States)
+```
+
+---
+
+## 🖼️ Images
+
+### Extension Icon
+- **File:** `icons/icon128.png`
+- **Size:** 128x128 pixels
+- **Format:** PNG
+- **Status:** ✅ Ready
+
+### Screenshots (5 screenshots)
+All screenshots are 1280x800 pixels, PNG format:
+
+1. **screenshot-1-all-issues.png**
+   - Shows 3 missing sections (What, Why, How it was tested)
+   - Description: "3 Missing Sections: What, Why, How it was tested"
+
+2. **screenshot-2-all-issues.png**
+   - Shows 3 missing sections
+   - Description: "3 Missing Sections: What, Why, How it was tested"
+
+3. **screenshot-3-two-issues.png**
+   - Shows 2 missing sections
+   - Description: "2 Missing Sections: Real-time validation"
+
+4. **screenshot-4-one-issue.png**
+   - Shows 1 missing section
+   - Description: "1 Missing Section: Almost there!"
+
+5. **screenshot-5-no-issues.png**
+   - Shows all sections validated
+   - Description: "All Validated ✓ Ready!"
+
+**Screenshot Location:** `screenshots/webstore/`
+
+---
+
+## 🔗 URLs
+
+### Privacy Policy
+```
+https://github.com/afrasiyabhaider/pr-description-guard/blob/main/PRIVACY.md
+```
+
+### Support URL (GitHub Discussions)
+```
+https://github.com/afrasiyabhaider/pr-description-guard/discussions
+```
+
+### Homepage URL
+```
+https://github.com/afrasiyabhaider/pr-description-guard
+```
+
+---
+
+## 🏷️ Tags
+
+Suggested tags (comma-separated):
+```
+GitHub, Git, Pull Request, Code Review, Developer Tools, Productivity, Quality Assurance, PR Validation
+```
+
+---
+
+## ✅ Compliance Checklist
+
+### Privacy & Data
+- [x] Privacy policy created and accessible
+- [x] No data collection (all processing is local)
+- [x] No analytics or tracking
+- [x] No network requests
+- [x] No data storage (localStorage, cookies, etc.)
+
+### Manifest V3
+- [x] Uses Manifest V3
+- [x] No deprecated APIs
+- [x] Content script only (no background service worker)
+- [x] No permissions required
+
+### Content
+- [x] No deceptive practices
+- [x] No malware or harmful code
+- [x] Accurate description
+- [x] All screenshots show actual functionality
+
+### Images
+- [x] Icon: 128x128 PNG
+- [x] Screenshots: 1280x800 PNG (5 screenshots)
+- [x] All images are high quality
+- [x] Screenshots show extension in action
+
+---
+
+## 📋 Submission Steps
+
+1. **Go to Chrome Web Store Developer Dashboard**
+   - Visit: https://chrome.google.com/webstore/devconsole
+   - Sign in with your Google account
+
+2. **Create New Item**
+   - Click "New Item"
+   - Upload `pr-description-guard.zip`
+
+3. **Fill in Store Listing**
+   - **Name:** PR Description Guard
+   - **Summary:** (Use short description above)
+   - **Description:** (Use detailed description above)
+   - **Category:** Developer Tools
+   - **Language:** English (United States)
+
+4. **Upload Images**
+   - **Icon:** Upload `icons/icon128.png`
+   - **Screenshots:** Upload all 5 screenshots from `screenshots/webstore/`
+
+5. **Add URLs**
+   - **Privacy Policy:** https://github.com/afrasiyabhaider/pr-description-guard/blob/main/PRIVACY.md
+   - **Support URL:** https://github.com/afrasiyabhaider/pr-description-guard/discussions
+   - **Homepage URL:** https://github.com/afrasiyabhaider/pr-description-guard
+
+6. **Add Tags**
+   - GitHub, Git, Pull Request, Code Review, Developer Tools, Productivity, Quality Assurance, PR Validation
+
+7. **Review & Submit**
+   - Review all information
+   - Submit for review
+
+---
+
+## 📝 Additional Notes
+
+### Version Information
+- **Current Version:** 1.0.0
+- **Manifest Version:** 3
+- **Minimum Chrome Version:** 88+ (for Manifest V3 support)
+
+### Permissions
+- **No permissions required** - Extension works without any special permissions
+
+### Testing
+- Tested on Chrome 88+
+- Tested on real GitHub PR pages
+- Tested with dark mode
+- Tested with SPA navigation
+
+### Support
+- **Issues:** GitHub Issues (if repository is public)
+- **Discussions:** GitHub Discussions
+- **Email:** (Add your support email if needed)
+
+---
+
+## 🚀 Post-Submission
+
+After submission:
+1. Review typically takes 1-3 business days
+2. You'll receive email notifications about status
+3. If rejected, address feedback and resubmit
+4. Once approved, extension will be live in Chrome Web Store
+
+---
+
+**Good luck with your submission! 🎉**

@@ -1,0 +1,44 @@
+title: "💬 Ask a Question"
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for asking a question! We're here to help.
+        
+        Please provide as much detail as possible so we can help you effectively.
+  - type: textarea
+    id: question
+    attributes:
+      label: "What's your question?"
+      description: "Please describe your question in detail"
+      placeholder: "I'm trying to..."
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: "Additional Context"
+      description: "Any additional information that might help us understand your question"
+      placeholder: "I'm using Chrome version X, on GitHub page Y..."
+  - type: dropdown
+    id: browser
+    attributes:
+      label: "Browser"
+      description: "What browser are you using?"
+      options:
+        - Chrome
+        - Edge
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: extension-version
+    attributes:
+      label: "Extension Version"
+      description: "What version of the extension are you using?"
+      options:
+        - "1.0.0"
+        - "Other (please specify in context)"
+    validations:
+      required: true

@@ -8,9 +8,16 @@ export default defineConfig({
     rollupOptions: {
       input: {
         content: resolve(__dirname, 'src/content.ts'),
+        'context-menu': resolve(__dirname, 'src/context-menu.js'),
+        popup: resolve(__dirname, 'src/popup.js'),
       },
       output: {
-        entryFileNames: 'content.js',
+        entryFileNames: (chunkInfo) => {
+          if (chunkInfo.name === 'popup' || chunkInfo.name === 'context-menu') {
+            return 'src/[name].js';
+          }
+          return '[name].js';
+        },
       },
     },
     copyPublicDir: false,
@@ -47,6 +54,22 @@ export default defineConfig({
             resolve(__dirname, `dist/icons/icon${size}.png`)
           );
         });
+        // Create src directory for popup files
+        const srcDir = resolve(__dirname, 'dist/src');
+        if (!existsSync(srcDir)) {
+          mkdirSync(srcDir, { recursive: true });
+        }
+        // Copy popup files
+        copyFileSync(
+          resolve(__dirname, 'src/popup.html'),
+          resolve(__dirname, 'dist/src/popup.html')
+        );
+        copyFileSync(
+          resolve(__dirname, 'src/popup.css'),
+          resolve(__dirname, 'dist/src/popup.css')
+        );
+        // Copy context-menu.js (already built by Vite)
+        // popup.js is also built by Vite
       },
     },
   ],

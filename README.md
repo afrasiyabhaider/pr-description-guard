@@ -45,6 +45,14 @@ This extension does not collect, store, or transmit any user data. All validatio
 
 See [PRIVACY.md](./PRIVACY.md) for more details.
 
+## Support & Feedback
+
+- 🐛 **Found a bug?** [Open an issue](https://github.com/afrasiyabhaider/pr-description-guard/issues/new)
+- 💡 **Have a feature request?** [Start a discussion](https://github.com/afrasiyabhaider/pr-description-guard/discussions/new)
+- ❓ **Have a question?** [Ask in discussions](https://github.com/afrasiyabhaider/pr-description-guard/discussions)
+
+**Note:** This repository is private. Code is not publicly available, but we welcome your feedback and bug reports!
+
 ## License
 
 MIT

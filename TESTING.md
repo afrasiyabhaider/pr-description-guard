@@ -1,187 +1,265 @@
-# Testing PR Description Guard in Chrome
+# Testing Guide for PR Description Guard
 
-## Quick Start Guide
+## Test Scenarios
 
-### Step 1: Build the Extension
+### 1. PR Creation Page (New PR)
+**Steps:**
+1. Navigate to a repository on GitHub
+2. Click "New Pull Request" or go to `/compare` page
+3. Select branches to compare
+4. **Expected:** Warning should appear immediately if description is empty or missing sections
 
-```bash
-npm run build
-```
+**Test Cases:**
+- [ ] Empty description → Shows "Description must not be empty" error
+- [ ] Description with only "## What" → Shows missing "What changed", "Why", "Tested"
+- [ ] Description with "## What changed" only → Shows missing "Why" and "Tested"
+- [ ] Description with all 3 sections → No warning (or warning removed)
 
-This creates all necessary files in the `dist/` directory.
+---
 
-### Step 2: Load Extension in Chrome
+### 2. SPA Navigation (Clicking "Create Pull Request")
+**Steps:**
+1. Navigate to a repository
+2. Click "New Pull Request" or go to `/compare` page
+3. Select branches
+4. Click "Create pull request" button (without refreshing)
+5. **Expected:** Warning should appear immediately on the new PR page
 
-1. **Open Chrome Extensions Page**
-   - Open Chrome browser
-   - Navigate to `chrome://extensions/`
-   - Or: Menu (⋮) → Extensions → Manage Extensions
+**Test Cases:**
+- [ ] Navigate via SPA (no page refresh) → Extension initializes correctly
+- [ ] Warning appears within 1-2 seconds of navigation
+- [ ] Real-time validation works as you type
+- [ ] Event listeners are attached correctly
 
-2. **Enable Developer Mode**
-   - Toggle "Developer mode" switch in the top-right corner
+**Known Issue (FIXED):**
+- Previously: Extension only worked on page refresh, not SPA navigation
+- Now: Extension detects SPA navigation via:
+  - History API interception (pushState/replaceState)
+  - Turbo/PJAX event listeners
+  - Main content replacement detection
+  - Faster interval checking (1s instead of 2s)
 
-3. **Load Unpacked Extension**
-   - Click "Load unpacked" button
-   - Navigate to the project directory
-   - **Select the `dist/` folder** (NOT the root project folder)
-   - Click "Select Folder"
+---
 
-4. **Verify Extension Loaded**
-   - You should see "PR Description Guard" in your extensions list
-   - Status should show "Enabled"
-   - No error messages should appear
+### 3. Existing PR View (Read-Only)
+**Steps:**
+1. Navigate to an existing PR (e.g., `/pull/123`)
+2. **Expected:** Extension validates the rendered description
 
-### Step 3: Test on GitHub
+**Test Cases:**
+- [ ] PR with no description → Shows all 3 missing sections
+- [ ] PR with description but missing sections → Shows missing sections
+- [ ] PR with all sections → No warning
+- [ ] Warning appears near the description (not in comment area)
 
-1. **Navigate to GitHub PR Page**
-   - Go to any GitHub repository
-   - Create a new pull request or edit an existing one
-   - URL should match: `github.com/*/compare/*` or `github.com/*/pull/*`
+---
 
-2. **Test Validation**
-   - Type in the PR description textarea
-   - Try an empty description → Should show warning
-   - Try description without required sections → Should show warnings
-   - Try description with all sections → Warnings should disappear
+### 4. Existing PR Edit Mode
+**Steps:**
+1. Navigate to an existing PR
+2. Click "Edit" on the PR description
+3. **Expected:** Extension validates the textarea as you type
 
-## Troubleshooting
+**Test Cases:**
+- [ ] Click "Edit" → Textarea appears, extension initializes
+- [ ] Type in textarea → Real-time validation works
+- [ ] Warning updates as you type
+- [ ] Only validates description, not comment fields
 
-### Error: "Could not load javascript 'content.js'"
+---
 
-**Possible Causes:**
-1. **Wrong directory selected** - Make sure you selected the `dist/` folder, not the root project folder
-2. **Build not run** - Run `npm run build` first
-3. **File permissions** - Check that `dist/content.js` exists and is readable
+### 5. Real-Time Validation
+**Steps:**
+1. Open PR creation or edit page
+2. Type in the description field
+3. **Expected:** Warning updates in real-time (300ms debounce)
 
-**Solution:**
-```bash
-# Rebuild the extension
-npm run build
+**Test Cases:**
+- [ ] Type "## What" → Still shows missing sections (needs "What changed")
+- [ ] Type "## What changed" → "What" error removed, "Why" and "Tested" still shown
+- [ ] Type all 3 sections → Warning disappears
+- [ ] Paste content → Validation triggers
+- [ ] Delete content → Validation updates
 
-# Verify files exist
-ls -la dist/
-# Should show: content.js, manifest.json, styles.css, icons/
+---
 
-# Verify content.js exists
-ls -lh dist/content.js
-# Should show file size (around 4-5 KB)
-```
+### 6. Multiple Tabs
+**Steps:**
+1. Open PR page in Tab 1
+2. Open different PR page in Tab 2
+3. **Expected:** Each tab works independently
 
-### Error: "Could not load manifest"
+**Test Cases:**
+- [ ] Tab 1 shows correct validation
+- [ ] Tab 2 shows correct validation
+- [ ] No interference between tabs
 
-**Possible Causes:**
-1. **Invalid JSON** - Manifest has syntax errors
-2. **Missing required fields** - Manifest missing required properties
-3. **Wrong directory** - Not loading from `dist/` folder
+---
 
-**Solution:**
-```bash
-# Validate manifest
-cat dist/manifest.json | python3 -m json.tool
+### 7. Navigation Between Pages
+**Steps:**
+1. Navigate from PR page to non-PR page
+2. Navigate back to PR page
+3. **Expected:** Extension cleans up and re-initializes correctly
 
-# Rebuild if needed
-npm run build
-```
+**Test Cases:**
+- [ ] Leave PR page → Extension cleans up (no warnings on other pages)
+- [ ] Return to PR page → Extension re-initializes
+- [ ] No memory leaks or duplicate listeners
 
-### Extension Not Working on GitHub
+---
 
-**Check:**
-1. **Extension is enabled** - Check `chrome://extensions/`
-2. **On correct page** - Must be on PR creation/edit page
-3. **Console errors** - Open DevTools (F12) → Console tab
-4. **Page reload** - Refresh the GitHub page after loading extension
+### 8. GitHub Template Handling
+**Steps:**
+1. Open PR creation page with a template
+2. Template contains HTML comments (`<!-- -->`)
+3. **Expected:** HTML comments are cleaned before validation
 
-**Debug:**
-1. Open Chrome DevTools (F12)
-2. Go to Console tab
+**Test Cases:**
+- [ ] Template with only HTML comments → Shows "empty" error
+- [ ] Template with content outside comments → Validates content
+- [ ] Template with sections in comments → Shows missing sections (comments ignored)
+
+---
+
+### 9. Edge Cases
+**Test Cases:**
+- [ ] Very long description → Validation still works
+- [ ] Special characters in description → Validation works
+- [ ] Markdown formatting → Validation works (looks for headers)
+- [ ] Multiple sections of same type → Validation works (finds first match)
+- [ ] Case variations ("What Changed" vs "what changed") → Validation works (case-insensitive)
+
+---
+
+### 10. Browser Console (Debug Mode)
+**Steps:**
+1. Open browser console (F12)
+2. Navigate to PR page
 3. Look for `[PR Guard]` messages
-4. Check for any JavaScript errors
 
-### Extension Icon Not Showing
+**Expected Logs:**
+- `[PR Guard] Navigation detected: /old/path → /new/path`
+- `[PR Guard] Initializing after SPA navigation to: /compare/...`
+- `[PR Guard] Event listeners attached to textarea`
+- `[PR Guard] Running initial validation, textarea value length: X`
+- `[PR Guard] Validation result: INVALID (3 errors)`
 
+**If logs show errors:**
+- Check if textarea is found
+- Check if event listeners are attached
+- Check if validation is running
+
+---
+
+## Common Issues and Solutions
+
+### Issue: Warning doesn't appear on SPA navigation
+**Solution:** Fixed in latest version
+- History API interception added
+- Multiple SPA event listeners added
+- Faster interval checking (1s)
+- Main content replacement detection
+
+### Issue: Real-time validation not working
+**Solution:** 
+- Check console for event listener attachment
+- Verify textarea is found
+- Check if GitHub replaced the textarea (re-initialization should handle this)
+
+### Issue: Warning appears in wrong place
 **Solution:**
-```bash
-# Verify icons exist
-ls -la dist/icons/
-# Should show: icon16.png, icon48.png, icon128.png
+- Extension should only target PR description, not comment fields
+- Check selectors in `dom.ts`
+- Verify exclusion of comment forms
 
-# Rebuild if icons missing
-npm run build
-```
+---
 
-## Development Workflow
+## Automated Tests
 
-### Watch Mode (Auto-rebuild)
+The project includes comprehensive automated tests covering most scenarios:
 
-```bash
-npm run dev
-```
-
-This watches for file changes and automatically rebuilds.
-
-### Manual Rebuild
+### Running Tests
 
 ```bash
-npm run build
+# Run all tests
+npm test
+
+# Run tests once (CI mode)
+npm run test:run
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests with UI
+npm run test:ui
 ```
 
-After rebuilding, reload the extension in Chrome:
-1. Go to `chrome://extensions/`
-2. Find "PR Description Guard"
-3. Click the refresh icon (🔄)
+### Test Coverage
 
-## File Structure
+**Test Files:**
+- `tests/validator.test.ts` - Core validation logic (29 tests)
+- `tests/dom.test.ts` - DOM utilities (15 tests)
+- `tests/spa-navigation.test.ts` - SPA navigation detection (7 tests)
+- `tests/realtime-validation.test.ts` - Real-time validation (12 tests)
+- `tests/template-handling.test.ts` - GitHub template handling (6 tests)
+- `tests/edge-cases.test.ts` - Edge cases and variations (25 tests)
 
-```
-dist/
-├── content.js      # Main content script (required)
-├── styles.css      # Warning styles (required)
-├── manifest.json   # Extension manifest (required)
-└── icons/
-    ├── icon16.png  # 16x16 icon (required)
-    ├── icon48.png  # 48x48 icon (required)
-    └── icon128.png # 128x128 icon (required)
-```
+**Total: 94 automated tests**
 
-## Testing Checklist
+### What's Tested
 
-- [ ] Extension loads without errors
-- [ ] Icon appears in extensions list
-- [ ] Extension works on GitHub PR pages
-- [ ] Validation shows warnings for empty description
-- [ ] Validation shows warnings for missing sections
-- [ ] Warnings disappear when all sections present
-- [ ] Dark mode styling works
+✅ **Validation Logic:**
+- Empty description detection
+- Section detection (What, Why, Tested)
+- Case insensitivity
+- Punctuation variations
+- Markdown format variations
+- HTML comment cleaning
+
+✅ **DOM Utilities:**
+- Textarea selection
+- Rendered description extraction
+- PR page detection
+- Comment form exclusion
+
+✅ **SPA Navigation:**
+- History API interception
+- Event listener attachment
+- Navigation detection
+
+✅ **Real-Time Validation:**
+- Event listener attachment
+- Input/paste event handling
+- Validation updates
+
+✅ **Edge Cases:**
+- Special characters
+- Long descriptions
+- Whitespace handling
+- Multiple sections
+- Negative cases
+
+### Manual Testing Required
+
+Some scenarios require manual testing on real GitHub:
+- Full SPA navigation flow (clicking "Create pull request")
+- Real GitHub DOM structure variations
+- Multiple tabs behavior
+- Dark/light mode
+- Browser-specific behavior
+
+---
+
+## Test Checklist
+
+Before submitting:
+- [x] All automated tests pass (94/94)
+- [ ] Manual SPA navigation test (clicking "Create pull request")
+- [ ] Real-time validation works on real GitHub
+- [ ] Works on both new PR and existing PR pages
 - [ ] No console errors
+- [ ] No memory leaks
+- [ ] Works in dark mode
+- [ ] Works in light mode
 - [ ] Extension doesn't break GitHub functionality
-
-## Common Issues
-
-### Issue: Extension loads but doesn't work
-
-**Check:**
-- Are you on a GitHub PR page? (URL must match patterns in manifest)
-- Is the textarea present? (Extension waits for it to load)
-- Check browser console for errors
-
-### Issue: Warnings not showing
-
-**Check:**
-- Description field is found (check console for `[PR Guard]` messages)
-- Validation is running (type in textarea, wait 300ms)
-- CSS is loading (check if styles are applied)
-
-### Issue: Multiple warnings appear
-
-**Solution:**
-- This is normal if multiple sections are missing
-- Each missing section shows as a separate warning item
-
-## Getting Help
-
-If you encounter issues:
-1. Check browser console for errors
-2. Verify all files are in `dist/` directory
-3. Ensure you're loading from `dist/` folder (not root)
-4. Try rebuilding: `npm run build`
-5. Reload extension in Chrome
