@@ -3,7 +3,8 @@
 ## Screenshot Descriptions
 
 ### Screenshot 1: All Validation Issues
-**File:** `Screenshot 2026-01-04 at 1.37.10 PM.png`
+**File:** `screenshot-1-all-issues.png` (1280x800, optimized for Chrome Web Store)  
+**Original:** `Screenshot 2026-01-04 at 1.37.10 PM.png`
 
 Shows the extension detecting all three missing sections:
 - ❌ Missing: **What changed**
@@ -15,7 +16,8 @@ The warning displays "PR Description Issues (3)" with all three missing sections
 ---
 
 ### Screenshot 2: Two Validation Issues
-**File:** `Screenshot 2026-01-04 at 1.37.19 PM.png`
+**File:** `screenshot-2-two-issues.png` (1280x800, optimized for Chrome Web Store)  
+**Original:** `Screenshot 2026-01-04 at 1.37.19 PM.png`
 
 Shows the extension detecting two missing sections:
 - ✅ Present: **What changed**
@@ -27,7 +29,8 @@ The warning displays "PR Description Issues (2)" with the two missing sections h
 ---
 
 ### Screenshot 3: One Validation Issue
-**File:** `Screenshot 2026-01-04 at 1.37.43 PM.png`
+**File:** `screenshot-3-one-issue.png` (1280x800, optimized for Chrome Web Store)  
+**Original:** `Screenshot 2026-01-04 at 1.37.43 PM.png`
 
 Shows the extension detecting one missing section:
 - ✅ Present: **What changed**
@@ -39,7 +42,8 @@ The warning displays "PR Description Issues (1)" with the single missing section
 ---
 
 ### Screenshot 4: No Issues (All Valid)
-**File:** `Screenshot 2026-01-04 at 1.37.53 PM.png`
+**File:** `screenshot-4-no-issues.png` (1280x800, optimized for Chrome Web Store)  
+**Original:** `Screenshot 2026-01-04 at 1.37.53 PM.png`
 
 Shows a valid PR description with all required sections present:
 - ✅ **What changed** - Present
@@ -51,7 +55,8 @@ No warning is displayed, indicating the PR description meets all requirements. T
 ---
 
 ### Screenshot 5: Extension Icon Close-up
-**File:** `Screenshot 2026-01-04 at 1.41.22 PM.png`
+**File:** `screenshot-5-icon.png` (1280x800, optimized for Chrome Web Store)  
+**Original:** `Screenshot 2026-01-04 at 1.41.22 PM.png`
 
 Shows the extension icon in detail:
 - **Design:** Golden shield with checklist (three horizontal lines)
