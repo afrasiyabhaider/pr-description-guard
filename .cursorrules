@@ -1,0 +1,378 @@
+# PR Description Guard - Cursor Rules
+
+## Project Overview
+
+PR Description Guard is a Chrome Extension (Manifest V3) that validates GitHub pull request descriptions to ensure they contain essential sections: "What changed", "Why", and "How it was tested". The extension provides non-intrusive, inline guidance without blocking PR creation or merging.
+
+**Timeline:** 7-10 days MVP  
+**Tech Stack:** TypeScript + Vite + Vitest  
+**Target:** GitHub PR creation pages only
+
+## Tech Stack Requirements
+
+- **Language:** TypeScript (strict mode enabled)
+- **Bundler:** Vite (fast builds, zero-config TypeScript)
+- **Testing:** Vitest (TDD approach, >90% coverage target)
+- **Styling:** Vanilla CSS with CSS Variables (no frameworks)
+- **Extension:** Chrome Extension Manifest V3 only
+- **No dependencies:** Pure JavaScript/TypeScript validation, no external libraries
+
+## Project Structure
+
+```
+src/
+  ├── content.ts      # Main orchestrator - initialization, SPA navigation, event binding
+  ├── validator.ts    # Pure validation logic (NO DOM dependencies)
+  ├── dom.ts          # DOM selectors and helpers with fallback chains
+  └── styles.css      # Warning UI styles with CSS variables
+
+tests/
+  └── validator.test.ts  # Unit tests (TDD, >90% coverage)
+
+icons/               # 16x16, 48x48, 128x128 PNG icons
+manifest.json        # Manifest V3 configuration
+vite.config.ts       # Vite build configuration
+tsconfig.json        # TypeScript strict mode
+package.json         # Dependencies and scripts
+```
+
+## File Responsibilities
+
+### content.ts
+- Handles initialization and cleanup
+- Manages SPA navigation detection (URL checking on interval, Turbo events)
+- Coordinates validation and UI updates
+- Binds event listeners (input, paste)
+- Retry mechanism: 3 attempts max, 500ms intervals
+
+### validator.ts
+- **PURE functions only** - NO DOM dependencies
+- Exports `validatePRDescription(description: string): ValidationResult`
+- Cleans template placeholders (HTML comments `<!-- comment -->` only)
+- Uses precise regex patterns for section detection
+- Returns structured validation results with rule IDs and messages
+
+### dom.ts
+- Selector functions with fallback chains
+- `getDescriptionField(): HTMLTextAreaElement | null` - tries multiple selectors
+- `getSubmitButton(): HTMLButtonElement | null` - JavaScript text matching
+- Error handling for missing elements
+- Logs warnings to console, never breaks GitHub
+
+### styles.css
+- CSS variables scoped to `.pr-guard-warning` element
+- Dark mode support: `[data-color-mode="dark"]`, `.dark` class, `@media (prefers-color-scheme: dark)`
+- Non-intrusive yellow/amber styling matching GitHub's design
+
+## Validation Rules (Precise Specifications)
+
+1. **EMPTY:** Description must contain non-whitespace content (after removing HTML comments)
+2. **WHAT:** Must include "What changed" section
+   - Pattern: `(?:^|\n)(?:#{1,3}|[\*_]{1,2})\s*what'?s?\s+changed[:\?]?`
+   - Case-insensitive, handles apostrophes, punctuation
+   - Does NOT match "Changes" alone (too generic)
+3. **WHY:** Must include "Why" section
+   - Pattern: `(?:^|\n)(?:#{1,3}|[\*_]{1,2})\s*why[:\?]?`
+4. **TESTED:** Must include "How it was tested" section
+   - Pattern: `(?:^|\n)(?:#{1,3}|[\*_]{1,2})\s*how\s+(?:it\s+)?was\s+tested[:\?]?`
+
+## Code Style & Patterns
+
+### TypeScript
+- Use strict mode
+- Define types explicitly: `ValidationResult`, `ValidationError`
+- No `any` types
+- Use ES modules (`export`, `import`)
+
+### Error Handling
+- **Always fail gracefully** - never break GitHub
+- Silent failures with console warnings only
+- No user-facing error messages
+- Wrap initialization in try-catch
+
+### DOM Selection
+- Always use fallback selector chains
+- Primary: `#pull_request_body`
+- Fallbacks: `textarea[name="pull_request[body]"]`, `.comment-form-textarea`, `textarea[aria-label*="body"]`
+- Log warnings if selectors fail
+- Return `null` if element not found
+
+### SPA Navigation
+- **DO NOT intercept** `history.pushState` or `history.replaceState` (too fragile)
+- Use URL pathname checking on interval (2-3 seconds)
+- Listen to `popstate` event (browser navigation)
+- Optional: Listen to Turbo `turbo:load` event
+- Fallback: Lightweight MutationObserver (direct children only)
+
+### Performance
+- Debounce validation: 300ms delay
+- Lightweight observers (not entire subtree)
+- Minimal DOM queries
+- Store handler references for cleanup
+
+### Memory Management
+- Always remove event listeners on cleanup
+- Clear timers on navigation
+- Use data attributes to track initialization
+- Prevent duplicate initializations
+
+## Testing Requirements
+
+### TDD Approach
+- Write tests FIRST, then implement
+- Target >90% coverage for validation logic
+- Test all edge cases: empty, whitespace, templates, variations, punctuation
+
+### Test Cases (validator.test.ts)
+- Empty string → fails EMPTY
+- Whitespace only → fails EMPTY
+- Missing sections → fails WHAT, WHY, TESTED
+- Valid sections → passes all rules
+- Case insensitivity
+- Apostrophes ("What's changed")
+- Punctuation (colons, question marks)
+- Template placeholders (HTML comments ignored)
+- "Changes" alone does NOT pass WHAT
+
+### Integration Testing
+- Test on real GitHub (not local)
+- Test with PR templates
+- Test with different PR types (new, edit, draft)
+- Test with multiple Chrome versions
+- Test screen readers (NVDA, JAWS, VoiceOver)
+
+## Design Principles
+
+1. **Non-intrusive** - Guide, don't block
+2. **Fail gracefully** - Never break GitHub (silent failure, console warnings)
+3. **Performance first** - Minimal overhead (debouncing, lightweight observers)
+4. **Accessibility** - Proper ARIA roles (`role="alert"` first, then `role="status"`), `aria-live="polite"`)
+5. **Maintainable** - Clean, testable code (>90% coverage)
+6. **User-friendly** - Clear, helpful messaging
+
+## Constraints & Scope
+
+### In Scope (MVP)
+- ✅ Validation of PR descriptions on GitHub
+- ✅ Inline warning display (simple, non-collapsible)
+- ✅ Real-time validation (debounced 300ms)
+- ✅ Template placeholder handling (HTML comments only)
+- ✅ Dark mode support
+- ✅ SPA navigation handling
+- ✅ Graceful error handling
+- ✅ Integration testing on real GitHub
+
+### Out of Scope (Post-MVP)
+- ❌ AI or auto-writing
+- ❌ Backend services or analytics
+- ❌ GitHub API integration
+- ❌ Posting comments on PRs
+- ❌ Blocking PR creation or merging
+- ❌ Custom validation rules (user-defined)
+- ❌ Settings UI or popup
+- ❌ Collapsible warnings
+- ❌ GitLab or Bitbucket support
+- ❌ Enterprise GitHub support
+
+### Technical Constraints
+- Manifest V3 only (no V2)
+- Content script only (no background service worker)
+- DOM-based only (no GitHub API calls)
+- Chrome only (no Firefox/Edge in MVP)
+- GitHub.com only (no enterprise GitHub)
+- No permissions required
+
+## Implementation Guidelines
+
+### When Writing Code
+
+1. **Follow TDD** - Write tests first for validator.ts
+2. **Keep validator.ts pure** - No DOM, no side effects
+3. **Use fallback selectors** - Always have multiple selector options
+4. **Debounce everything** - Input events, initialization
+5. **Clean up properly** - Remove listeners, clear timers on navigation
+6. **Use CSS variables** - For theming and dark mode
+7. **Namespace CSS classes** - Use `pr-guard-` prefix
+8. **Log to console** - For debugging, never show user errors
+9. **Handle edge cases** - Paste events, multiple tabs, AJAX loading, markdown preview
+
+### When Writing Tests
+
+1. **Test edge cases** - Empty, whitespace, templates, variations
+2. **Test regex patterns** - All markdown formats, case variations, punctuation
+3. **Test error messages** - User-friendly, actionable
+4. **Achieve >90% coverage** - Especially for validation logic
+
+### When Writing CSS
+
+1. **Use CSS variables** - Scoped to `.pr-guard-warning`
+2. **Support dark mode** - GitHub classes + media query fallback
+3. **Match GitHub's design** - Non-intrusive yellow/amber styling
+4. **Namespace everything** - `pr-guard-` prefix for all classes
+
+### When Handling Errors
+
+1. **Silent failure** - Log to console, never show user
+2. **Never break GitHub** - Extension should degrade gracefully
+3. **Structured logging** - Include context in console warnings
+4. **Retry mechanisms** - 3 attempts max, 500ms intervals
+
+## Common Patterns
+
+### Debounce Utility
+```typescript
+function debounce(func: Function, wait: number): Function
+// Returns debounced version, clears timeout on new calls
+```
+
+### Retry Pattern
+```typescript
+// Retry up to 3 times, 500ms intervals
+// Log warning if all retries fail
+// Exit silently, don't break GitHub
+```
+
+### Selector Fallback
+```typescript
+// Try selectors in order
+// Return first match or null
+// Log warning if all fail
+```
+
+### Cleanup Pattern
+```typescript
+// Remove event listeners
+// Clear timers
+// Remove DOM elements
+// Reset initialization markers
+```
+
+## Quality Checklist
+
+Before considering code complete:
+- [ ] TypeScript strict mode passes
+- [ ] Unit tests pass (>90% coverage)
+- [ ] No console errors in normal operation
+- [ ] Handles all edge cases
+- [ ] Proper cleanup on navigation
+- [ ] Accessibility attributes set correctly
+- [ ] Dark mode works
+- [ ] No memory leaks
+- [ ] Fails gracefully if GitHub DOM changes
+
+## Chrome Web Store Compliance
+
+### Required Compliance Rules
+
+**ALWAYS comply with Chrome Web Store policies. Violations result in rejection or removal.**
+
+#### Privacy Policy Requirements
+- **MUST have privacy policy** - Required for all extensions
+- Privacy policy URL must be accessible and accurate
+- Must clearly state what data is collected (if any)
+- For this extension: State that NO data is collected, stored, or transmitted
+- Privacy policy must be linked in manifest.json and Web Store listing
+
+#### Data Collection Restrictions
+- **NO data collection** - Extension does not collect, store, or transmit user data
+- **NO analytics** - Do not use Google Analytics, Mixpanel, or any tracking
+- **NO external API calls** - All validation happens locally
+- **NO user identification** - Do not track users or their PRs
+- **NO cookies or storage** - Do not use localStorage, sessionStorage, or cookies
+- **NO network requests** - Do not make HTTP/HTTPS requests to any server
+
+#### Manifest V3 Requirements
+- **MUST use Manifest V3** - Manifest V2 is deprecated
+- **No background service worker** - Content script only for MVP
+- **No permissions** - Extension runs without special permissions
+- **Proper content script matches** - Only match GitHub PR pages
+- **Icons required** - 16x16, 48x48, 128x128 PNG files
+- **Version format** - Use semantic versioning (e.g., "1.0.0")
+
+#### Content Policies
+- **No deceptive practices** - Extension does what it claims
+- **No malware or harmful code** - Code must be safe and secure
+- **No unauthorized access** - Only access GitHub PR pages as intended
+- **No user data misuse** - No data to misuse (extension doesn't collect data)
+- **Respect user privacy** - All processing is local, no data leaves browser
+
+#### User Data Handling
+- **Zero data collection** - Extension never collects user data
+- **Local processing only** - All validation happens in browser
+- **No data transmission** - No data sent to servers
+- **No data storage** - No persistent storage of any kind
+- **No user tracking** - No tracking of user behavior or PRs
+
+#### Permissions Best Practices
+- **Minimal permissions** - Request only what's absolutely necessary
+- **No host permissions** - Extension doesn't need host permissions
+- **No activeTab permission** - Not needed for content script
+- **No storage permission** - Not needed (no data storage)
+- **No background permission** - Not needed (no background script)
+
+#### Web Store Listing Requirements
+- **Accurate description** - Describe exactly what extension does
+- **Screenshots required** - 1280x800 or 640x400 pixels
+- **Privacy policy URL** - Must be publicly accessible
+- **Support information** - Provide support contact if needed
+- **Clear purpose** - Users must understand extension's function
+
+### Privacy Policy Content
+
+The privacy policy MUST state:
+```
+PR Description Guard does not collect, store, or transmit any user data.
+
+All validation happens locally in your browser.
+No data is sent to any server.
+No analytics are used.
+No cookies are set.
+No user information is tracked.
+```
+
+### Compliance Checklist
+
+Before submitting to Chrome Web Store:
+- [ ] Manifest V3 compliant
+- [ ] Privacy policy created and accessible
+- [ ] Privacy policy URL added to manifest.json
+- [ ] No data collection code (verify no network requests)
+- [ ] No analytics code (verify no tracking)
+- [ ] No storage usage (verify no localStorage/cookies)
+- [ ] Icons provided (16x16, 48x48, 128x128)
+- [ ] Screenshots prepared (1280x800 or 640x400)
+- [ ] Accurate description in listing
+- [ ] All permissions justified (should be none for MVP)
+- [ ] Code review for compliance violations
+- [ ] Test extension doesn't make network requests
+- [ ] Verify extension works without internet connection
+
+### Code Review for Compliance
+
+**When reviewing code, check:**
+1. **No fetch/XMLHttpRequest** - Verify no network requests
+2. **No localStorage/sessionStorage** - Verify no data storage
+3. **No cookies** - Verify no cookie usage
+4. **No external scripts** - Verify no third-party scripts loaded
+5. **No analytics** - Verify no tracking code
+6. **No user identification** - Verify no user tracking
+7. **Privacy policy accurate** - Verify policy matches actual behavior
+
+### Violation Consequences
+
+**Chrome Web Store violations result in:**
+- Extension rejection during review
+- Extension removal from store
+- Developer account suspension (for repeated violations)
+- Legal issues (for privacy violations)
+
+**ALWAYS verify compliance before submission.**
+
+## Notes
+
+- Timeline is 7-10 days for MVP
+- Setup time (TypeScript, Vite, Vitest) is ~1-2 hours one-time cost
+- Test coverage >90% is achievable with TDD approach
+- Keep it simple - MVP is minimal, no feature creep
+- Always prioritize: non-intrusive, fail gracefully, performance
+- **ALWAYS comply with Chrome Web Store policies** - This is non-negotiable
