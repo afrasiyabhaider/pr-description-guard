@@ -3,8 +3,10 @@
  * Creates right-click menu items
  */
 
-// Create context menu items when extension is installed/updated
-chrome.runtime.onInstalled.addListener(() => {
+/**
+ * Create context menu items
+ */
+function createContextMenus() {
   // Remove existing menu items to avoid duplicates
   chrome.contextMenus.removeAll(() => {
     // Create main menu item
@@ -43,10 +45,12 @@ chrome.runtime.onInstalled.addListener(() => {
       contexts: ['page', 'editable'],
     });
   });
-});
+}
 
-// Handle context menu clicks
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+/**
+ * Handle context menu clicks
+ */
+function handleMenuClick(info, tab) {
   switch (info.menuItemId) {
     case 'pr-guard-settings':
       // Open popup/settings page
@@ -70,4 +74,13 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     default:
       break;
   }
-});
+}
+
+// Create context menu items when extension is installed/updated
+chrome.runtime.onInstalled.addListener(createContextMenus);
+
+// Handle context menu clicks
+chrome.contextMenus.onClicked.addListener(handleMenuClick);
+
+// Export for testing (ES modules)
+export { createContextMenus, handleMenuClick };

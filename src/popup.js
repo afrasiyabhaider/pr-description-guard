@@ -40,6 +40,9 @@ async function saveSettings(settings) {
   }
 }
 
+// Export for testing (ES modules)
+export { loadSettings, saveSettings, DEFAULT_SETTINGS };
+
 /**
  * Initialize popup
  */
@@ -76,6 +79,9 @@ async function initPopup() {
     }
   });
 }
+
+// Export for testing
+export { initPopup };
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {

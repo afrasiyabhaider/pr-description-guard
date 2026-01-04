@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getDescriptionField, getRenderedDescription, getDescriptionContainer, isPRPage } from '../src/dom';
+import { getDescriptionField, getRenderedDescription, getDescriptionContainer, isPRPage, getSubmitButton } from '../src/dom';
 
 describe('DOM Utilities', () => {
   let originalPathname: string;
@@ -166,26 +166,48 @@ describe('DOM Utilities', () => {
       button.textContent = 'Create pull request';
       document.body.appendChild(button);
       
-      // Note: getSubmitButton is imported but we need to test it
-      // Since it's marked as unused, we'll test the pattern
-      const buttons = document.querySelectorAll<HTMLButtonElement>('button[type="submit"]');
-      const found = Array.from(buttons).find(btn => 
-        btn.textContent?.trim().toLowerCase().includes('create pull request')
-      );
+      const found = getSubmitButton();
       expect(found).toBe(button);
     });
     
     it('should find button with "Create draft pull request" text', () => {
+      document.body.innerHTML = '';
       const button = document.createElement('button');
       button.type = 'submit';
       button.textContent = 'Create draft pull request';
       document.body.appendChild(button);
       
-      const buttons = document.querySelectorAll<HTMLButtonElement>('button[type="submit"]');
-      const found = Array.from(buttons).find(btn => 
-        btn.textContent?.trim().toLowerCase().includes('create draft pull request')
-      );
+      const found = getSubmitButton();
       expect(found).toBe(button);
+    });
+    
+    it('should find button with "Update comment" text', () => {
+      document.body.innerHTML = '';
+      const button = document.createElement('button');
+      button.type = 'submit';
+      button.textContent = 'Update comment';
+      document.body.appendChild(button);
+      
+      const found = getSubmitButton();
+      expect(found).toBe(button);
+    });
+    
+    it('should find button with .btn-primary class as fallback', () => {
+      document.body.innerHTML = '';
+      const button = document.createElement('button');
+      button.type = 'submit';
+      button.className = 'btn-primary';
+      document.body.appendChild(button);
+      
+      const found = getSubmitButton();
+      expect(found).toBe(button);
+    });
+    
+    it('should return null when no submit button found', () => {
+      document.body.innerHTML = '';
+      
+      const found = getSubmitButton();
+      expect(found).toBeNull();
     });
   });
   
@@ -227,6 +249,32 @@ describe('DOM Utilities', () => {
       expect(result).toBe(textarea);
     });
     
+    it('should handle textarea in description area (timeline-comment-group)', () => {
+      document.body.innerHTML = '';
+      const container = document.createElement('div');
+      container.className = 'timeline-comment-group';
+      const textarea = document.createElement('textarea');
+      container.appendChild(textarea);
+      document.body.appendChild(container);
+      
+      const result = getDescriptionField();
+      // Should find it via isInDescriptionArea check
+      expect(result).toBe(textarea);
+    });
+    
+    it('should handle textarea in js-issue-body', () => {
+      document.body.innerHTML = '';
+      const container = document.createElement('div');
+      container.className = 'js-issue-body';
+      const textarea = document.createElement('textarea');
+      container.appendChild(textarea);
+      document.body.appendChild(container);
+      
+      const result = getDescriptionField();
+      // Should find it via isInDescriptionArea check
+      expect(result).toBe(textarea);
+    });
+    
     it('should NOT return textarea in comment form', () => {
       const commentForm = document.createElement('div');
       commentForm.className = 'js-new-comment-form';
@@ -238,6 +286,39 @@ describe('DOM Utilities', () => {
       const result = getDescriptionField();
       // Should NOT find it because it's in a comment form
       expect(result).toBeNull();
+    });
+    
+    it('should handle DEV_MODE logging when textarea not found', () => {
+      // Set DEV_MODE
+      const devWindow = window as typeof window & { __PR_GUARD_DEV__?: boolean };
+      devWindow.__PR_GUARD_DEV__ = true;
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      
+      document.body.innerHTML = '';
+      const result = getDescriptionField();
+      
+      // Should return null
+      expect(result).toBeNull();
+      // Should log warning in dev mode
+      expect(consoleSpy).toHaveBeenCalledWith('[PR Guard] Could not find description field');
+      
+      consoleSpy.mockRestore();
+      delete devWindow.__PR_GUARD_DEV__;
+    });
+    
+    it('should NOT log when DEV_MODE is false', () => {
+      // DEV_MODE is false by default (not set)
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      
+      document.body.innerHTML = '';
+      const result = getDescriptionField();
+      
+      // Should return null
+      expect(result).toBeNull();
+      // Should NOT log in production mode
+      expect(consoleSpy).not.toHaveBeenCalled();
+      
+      consoleSpy.mockRestore();
     });
   });
   
