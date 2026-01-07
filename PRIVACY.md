@@ -48,7 +48,6 @@ All validation happens **locally in your browser**. The extension:
 The extension requests the following permissions:
 
 - **`storage`** - Used only to store your extension preferences (enableValidation, showOnExistingPRs, strictMode). No user content or PR data is stored.
-- **`contextMenus`** - Used to provide a context menu option (optional feature)
 
 **No host permissions** - The extension does not request access to any websites beyond what's needed for the content script to run on GitHub PR pages.
 
