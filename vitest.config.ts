@@ -24,7 +24,6 @@ export default defineConfig({
         'src/validator.ts',
         'src/dom.ts',
         'src/popup.js',
-        'src/context-menu.js',
       ],
       thresholds: {
         lines: 90,
